@@ -47,11 +47,12 @@ let basic_arithmetic =
   fun ctxt ->
     match P.ml L.token buf with
     | [A.{binds=b; is_rec=false}] ->
-      match b with
+      begin match b with
       | [A.{sym; args=[]; exp}] ->
         assert_equal ~ctxt A.{n="x"; lnum=1} sym;
         assert_equal ~ctxt (A.Plus (A.Int 3, A.Int 4)) exp
       | _ -> assert_failure "foobar"
+      end
     | _ -> assert_failure "foobar"
 
 let () = run_test_tt_main ("Parser tests" >::: ["arithmetic" >:: basic_arithmetic])

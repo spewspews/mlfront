@@ -1,5 +1,5 @@
-%token <Ast.sym> SYM
-%token EOF LET LEQ FOO REC AND
+%token <Ast.sym> VAL_SYM
+%token EOF LET EQ FOO REC AND
 
 %type <Ast.mutual_bind list> ml
 %type <unit> exp
@@ -30,7 +30,7 @@ top_binding_tail:
 | top_binding_tail AND binding { $3 :: $1 }
 
 binding:
-  SYM LEQ exp { Ast.{sym = $1; exp = $3} }
+  VAL_SYM EQ exp { Ast.{sym = $1; exp = $3} }
 
 exp:
   FOO { () }

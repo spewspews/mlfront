@@ -1,4 +1,4 @@
-OBJ = grammar.cmx
+OBJ = grammar.cmx lexer.cmx
 
 build: $(OBJ)
 
@@ -20,6 +20,12 @@ grammar.ml: grammar.mly
 grammar.mli: grammar.mly
 	ocamlyacc grammar.mly
 
+lexer.cmx: lexer.ml grammar.cmi ast.cmi
+	ocamlopt -c $<
+
+lexer.ml: lexer.mll
+	ocamllex $<
+
 %.cmi: %.ml
 	ocamlopt -c $<
 
@@ -27,7 +33,7 @@ test: parser.cmx
 	$(MAKE) -C unit_tests
 
 clean:
-	rm -f *.cm[ix] *.o grammar.mli grammar.ml
+	rm -f *.cm[ix] *.o grammar.mli grammar.ml lexer.ml
 	$(MAKE) -C unit_tests clean
 
 .PHONY: clean build

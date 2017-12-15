@@ -4,9 +4,9 @@ module A = Ast
 
 %token <Ast.sym> SYM
 %token <int> INT
-%token EOF LET EQ FOO REC AND PLUS
+%token EOF LET EQ REC AND PLUS
 
-%type <Ast.mutual_bind list> ml
+%type <Ast.prog> ml
 %type <Ast.exp> exp
 
 %left PLUS
@@ -16,7 +16,7 @@ module A = Ast
 %%
 
 ml:
-  top_bindings { List.rev $1 }
+  top_bindings EOF { List.rev $1 }
 
 top_bindings:
    { [] }

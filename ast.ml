@@ -10,3 +10,5 @@ type exp =
 type bind = {sym : sym; args : sym list; exp : exp}
 
 type mutual_bind = {binds : bind list; is_rec : bool}
+
+type prog = mutual_bind list

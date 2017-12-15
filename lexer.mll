@@ -12,15 +12,15 @@ let alpha = ['a'-'z' 'A'-'Z' '_']
 let alnum = ['a'-'z' 'A'-'Z' '0'-'9' '_']
 
 rule token = parse
+| eof { P.EOF }
 | ws+ { token lexbuf }
 | '\n' { L.new_line lexbuf; token lexbuf }
 | "let" { P.LET }
 | "=" { P.EQ }
-| "FOO" { P.FOO }
 | "rec" { P.REC }
 | "and" { P.AND }
 | '+' { P.PLUS }
-| ( lower | '_' ) alnum*
+| lower alnum*
   {
     let L.{pos_lnum=lnum} = L.lexeme_start_p lexbuf in
     P.SYM A.{

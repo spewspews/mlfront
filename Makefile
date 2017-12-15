@@ -23,7 +23,7 @@ lexer.ml: lexer.mll
 %.cmi: %.ml
 	ocamlopt -c $<
 
-test: parser.cmx
+test: $(OBJ)
 	$(MAKE) -C unit_tests
 
 clean:

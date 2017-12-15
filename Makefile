@@ -1,26 +1,20 @@
-OBJ = grammar.cmx lexer.cmx
+OBJ = parser.cmx lexer.cmx
 
 build: $(OBJ)
 
-#parser.cmx: parser.ml parser.cmi grammar.cmx
-#	ocamlopt -c -I +menhirLib parser.ml
+parser.cmx: parser.ml parser.cmi ast.cmi
+	ocamlopt -c parser.ml
 
-#parser.cmi: parser.mli ast.cmi grammar.cmi
-#	ocamlopt parser.mli
-
-grammar.cmx: grammar.ml grammar.cmi ast.cmi
-	ocamlopt -c grammar.ml
-
-grammar.cmi: grammar.mli ast.cmi
+parser.cmi: parser.mli ast.cmi
 	ocamlopt $<
 
-grammar.ml: grammar.mly
-	ocamlyacc grammar.mly
+parser.ml: parser.mly
+	ocamlyacc parser.mly
 
-grammar.mli: grammar.mly
-	ocamlyacc grammar.mly
+parser.mli: parser.mly
+	ocamlyacc parser.mly
 
-lexer.cmx: lexer.ml grammar.cmi ast.cmi
+lexer.cmx: lexer.ml parser.cmi ast.cmi
 	ocamlopt -c $<
 
 lexer.ml: lexer.mll
@@ -33,7 +27,7 @@ test: parser.cmx
 	$(MAKE) -C unit_tests
 
 clean:
-	rm -f *.cm[ix] *.o grammar.mli grammar.ml lexer.ml
+	rm -f *.cm[ix] *.o parser.mli parser.ml lexer.ml
 	$(MAKE) -C unit_tests clean
 
 .PHONY: clean build

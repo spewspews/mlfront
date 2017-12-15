@@ -1,8 +1,16 @@
-%token <Ast.sym> VAL_SYM
-%token EOF LET EQ FOO REC AND
+%{
+module A = Ast
+%}
+
+%token <Ast.sym> SYM
+%token <int> INT
+%token EOF LET EQ FOO REC AND PLUS
 
 %type <Ast.mutual_bind list> ml
-%type <unit> exp
+%type <Ast.exp> exp
+
+%left PLUS
+
 %start ml
 
 %%
@@ -18,7 +26,7 @@ top_mutual_binding:
   top_binding_head top_binding_tail
   {
     let (b, r) = $1 in
-    Ast.{binds=b::$2; is_rec = r}
+    A.{binds = b::$2; is_rec = r}
   }
 
 top_binding_head:
@@ -30,7 +38,16 @@ top_binding_tail:
 | top_binding_tail AND binding { $3 :: $1 }
 
 binding:
-  VAL_SYM EQ exp { Ast.{sym = $1; exp = $3} }
+  SYM symz EQ exp { A.{sym = $1; args = $2; exp = $4} }
+
+symz:
+  { [] }
+| syms { List.rev $1 }
+
+syms:
+  SYM { [ $1 ] }
+| syms SYM { $2 :: $1 }
 
 exp:
-  FOO { () }
+  exp PLUS exp { A.Plus ($1, $3) }
+| INT { A.Int $1 }

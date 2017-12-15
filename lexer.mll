@@ -1,6 +1,6 @@
 {
   module L = Lexing
-  module P = Grammar
+  module P = Parser
   module A = Ast
 }
 
@@ -19,11 +19,14 @@ rule token = parse
 | "FOO" { P.FOO }
 | "rec" { P.REC }
 | "and" { P.AND }
-| ( lower | '_' ) alnum+
+| '+' { P.PLUS }
+| ( lower | '_' ) alnum*
   {
     let L.{pos_lnum=lnum} = L.lexeme_start_p lexbuf in
-    P.VAL_SYM A.{
+    P.SYM A.{
       n = (Lexing.lexeme lexbuf);
       lnum;
     }
   }
+| ('0' ['o' 'O' 'x' 'X' 'b' 'B'])? ['0'-'9' '_']+
+  { P.INT (int_of_string (Lexing.lexeme lexbuf)) }

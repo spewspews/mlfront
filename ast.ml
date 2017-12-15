@@ -2,4 +2,6 @@ type sym = {n : string; lnum : int}
 
 type exp = unit
 
-type binding = {sym : sym; exp : exp; is_rec : bool}
+type bind = {sym : sym; exp : exp}
+
+type mutual_bind = {binds : bind list; is_rec : bool}

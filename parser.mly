@@ -1,14 +1,18 @@
 %{
-module A = Ast
+open Ast
 %}
 
-%token <Ast.sym> SYM
+%token <Ast.sym> VALUE_NAME CONSTR_NAME
 %token <int> INT
-%token EOF LET EQ REC AND PLUS
+%token <string> STRING ERROR
+%token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
 
 %type <Ast.prog> ml
 %type <Ast.exp> exp
 
+%nonassoc below_COMMA
+%left COMMA
+%nonassoc above_COMMA
 %left PLUS
 
 %start ml
@@ -23,10 +27,9 @@ top_bindings:
 |  top_bindings top_mutual_binding { $2 :: $1 }
 
 top_mutual_binding:
-  top_binding_head top_binding_tail
-  {
+  top_binding_head top_binding_tail {
     let (b, r) = $1 in
-    A.{binds = b::$2; is_rec = r}
+    {binds = b::$2; is_rec = r}
   }
 
 top_binding_head:
@@ -38,16 +41,32 @@ top_binding_tail:
 | top_binding_tail AND binding { $3 :: $1 }
 
 binding:
-  SYM symz EQ exp { A.{sym = $1; args = $2; exp = $4} }
+  pattern EQ exp { Value {bound = $1; exp = $3} }
+| VALUE_NAME syms EQ exp { Function {sym = $1; args = $2; exp = $4} }
 
-symz:
-  { [] }
-| syms { List.rev $1 }
+pattern:
+  VALUE_NAME { Name $1 }
+| tuple_pattern %prec below_COMMA { Tuple (List.rev $1) }
+| LPAREN pattern RPAREN { $2 }
+| CONSTR_NAME pattern %prec above_COMMA {
+    Type {constr=$1; body=$2}
+  }
+
+tuple_pattern:
+  tuple_pattern COMMA pattern { $3 :: $1 }
+| pattern COMMA pattern { [$3; $1] }
 
 syms:
-  SYM { [ $1 ] }
-| syms SYM { $2 :: $1 }
+  rsyms { List.rev $1 }
+
+rsyms:
+  VALUE_NAME { [ $1 ] }
+| syms VALUE_NAME { $2 :: $1 }
 
 exp:
-  exp PLUS exp { A.Plus ($1, $3) }
-| INT { A.Int $1 }
+  exp PLUS exp { Plus ($1, $3) }
+| INT { Int $1 }
+| TRUE { Bool true }
+| FALSE { Bool false }
+| STRING { String $1 }
+| ERROR { Error $1 }

@@ -14,7 +14,7 @@ parser.ml: parser.mly
 parser.mli: parser.mly
 	ocamlyacc parser.mly
 
-lexer.cmx: lexer.ml parser.cmi ast.cmi
+lexer.cmx: lexer.ml parser.cmi ast.cmi util.cmi
 	ocamlopt -c $<
 
 lexer.ml: lexer.mll
@@ -27,7 +27,7 @@ test: $(OBJ)
 	$(MAKE) -C unit_tests
 
 clean:
-	rm -f *.cm[ix] *.o parser.mli parser.ml lexer.ml
+	rm -f *.cm[ix] *.o parser.mli parser.ml lexer.ml parser.output
 	$(MAKE) -C unit_tests clean
 
 .PHONY: clean build

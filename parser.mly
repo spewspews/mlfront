@@ -76,15 +76,12 @@ type_exp:
 type_exp1:
   SINGLEQ name { Type_exp.Var $2 }
 | UNDERSCORE { Type_exp.Anon }
-| type_constr { Type_exp.Constr $1 }
+| type_exp1 LOWER_NAME { Type_exp.Constr {exp=$1; constr=$2} }
 | LPAREN type_exp RPAREN { $2 }
 
 type_fun:
   type_fun ARROW type_exp1 { $3 :: $1 }
 | type_exp1 ARROW type_exp1 { [$3; $1] }
-
-type_constr:
-  type_exp1 LOWER_NAME { Type_exp.{exp=$1; constr=$2} }
 
 syms:
   rsyms { List.rev $1 }

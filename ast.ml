@@ -1,21 +1,40 @@
 type sym = {n : string; lnum : int}
 
-type pattern =
-| Name of sym
-| Tuple of pattern list
-| Type of {constr : sym; body : pattern}
+type const =
+| Bool of bool
+| Char of char
+| Error of string
+| Float of float
+| Int of int
+| String of string
+
+module Type_exp = struct
+  type t =
+  | Anon
+  | Constr of constr
+  | Var of sym
+  | Fun of t list
+  and constr = {exp : t; constr : sym}
+end
+
+module Pattern = struct
+  type t =
+  | Alt of t list
+  | As of {pattern : t; bound_var : sym}
+  | Cons of t * t
+  | Const of const
+  | Name of sym
+  | Tuple of t list
+  | Type_constr of {constr : sym; body : t}
+  | Typed of {pattern : t; typ : Type_exp.t}
+end
 
 type exp =
-| Int of int
-| Float of float
-| String of string
-| Char of char
+| Const of const
 | Plus of exp * exp
-| Bool of bool
-| Error of string
 
 type bind =
-| Value of {bound : pattern; exp : exp}
+| Value of {bound : Pattern.t; exp : exp}
 | Function of {sym : sym; args : sym list; exp : exp}
 
 type mutual_bind = {binds : bind list; is_rec : bool}

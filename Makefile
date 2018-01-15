@@ -9,10 +9,10 @@ parser.cmi: parser.mli ast.cmi
 	ocamlopt $<
 
 parser.ml: parser.mly
-	ocamlyacc parser.mly
+	ocamlyacc $<
 
 parser.mli: parser.mly
-	ocamlyacc parser.mly
+	ocamlyacc $<
 
 lexer.cmx: lexer.ml parser.cmi ast.cmi util.cmi
 	ocamlopt -c $<
@@ -22,6 +22,9 @@ lexer.ml: lexer.mll
 
 %.cmi: %.ml
 	ocamlopt -c $<
+
+parser.output: parser.mly
+	ocamlyacc -v $<
 
 test: $(OBJ)
 	$(MAKE) -C unit_tests

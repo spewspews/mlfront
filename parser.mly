@@ -6,7 +6,7 @@ open Ast
 %token <int> INT
 %token <string> STRING ERROR
 %token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
-%token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON
+%token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON ASTERISK
 
 %type <Ast.prog> ml
 %type <Ast.exp> exp
@@ -71,17 +71,30 @@ pattern_alt:
 
 type_exp:
   type_fun { Type_exp.Fun $1 }
+| type_tuple { Type_exp.Tuple $1 }
 | type_exp1 { $1 }
 
 type_exp1:
   SINGLEQ name { Type_exp.Var $2 }
 | UNDERSCORE { Type_exp.Anon }
-| type_exp1 LOWER_NAME { Type_exp.Constr {exp=$1; constr=$2} }
 | LPAREN type_exp RPAREN { $2 }
+| type_constr { $1 }
 
 type_fun:
   type_fun ARROW type_exp1 { $3 :: $1 }
 | type_exp1 ARROW type_exp1 { [$3; $1] }
+
+type_tuple:
+  type_tuple ASTERISK type_exp1 { $3 :: $1 }
+| type_exp1 ASTERISK type_exp1 { [$3; $1] }
+
+type_constr:
+  type_exp1 LOWER_NAME { Type_exp.Constr {exps=[$1]; constr=$2} }
+| LPAREN type_exps RPAREN LOWER_NAME { Type_exp.Constr {exps=(List.rev $2); constr=$4} }
+
+type_exps:
+  type_exps COMMA type_exp { $3 :: $1 }
+| type_exp COMMA type_exp { [$3; $1] }
 
 syms:
   rsyms { List.rev $1 }

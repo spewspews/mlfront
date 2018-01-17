@@ -11,9 +11,10 @@ type const =
 module Type_exp = struct
   type t =
   | Anon
-  | Constr of {exp : t; constr : sym}
+  | Constr of {exps : t list; constr : sym}
   | Var of sym
   | Fun of t list
+  | Tuple of t list
 end
 
 module Pattern = struct

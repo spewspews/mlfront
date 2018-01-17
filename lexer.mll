@@ -31,11 +31,18 @@ let alpha = ['a'-'z' 'A'-'Z' '_']
 let alnum = ['a'-'z' 'A'-'Z' '0'-'9' '_']
 
 rule token = parse
+| "()" { P.UNIT_VAL }
+| "->" { P.ARROW }
+| "::" { P.COLONCOLON }
+| "[]" { P.EMPTY }
+| '*' { P.ASTERISK }
+| '+' { P.PLUS }
+| ':' { P.COLON }
+| '=' { P.EQ }
+| '\'' { P.SINGLEQ }
+| '\n' { Lexing.new_line lexbuf; token lexbuf }
 | eof { P.EOF }
 | ws+ { token lexbuf }
-| '\n' { Lexing.new_line lexbuf; token lexbuf }
-| '=' { P.EQ }
-| '+' { P.PLUS }
 | ('0' ['o' 'O' 'x' 'X' 'b' 'B'])? ['0'-'9' '_']+ {
     P.INT (int_of_string (Lexing.lexeme lexbuf))
   }
@@ -45,12 +52,6 @@ rule token = parse
     | Ok s -> P.STRING s
     | Error s -> P.ERROR s
   }
-| '\'' { P.SINGLEQ }
-| "[]" { P.EMPTY }
-| "()" { P.UNIT_VAL }
-| "::" { P.COLONCOLON }
-| ':' { P.COLON }
-| "->" { P.ARROW }
 | lower alnum* {
     let Lexing.{pos_lnum=lnum} = Lexing.lexeme_start_p lexbuf in
     let n = Lexing.lexeme lexbuf in

@@ -29,6 +29,8 @@ let lower = ['a'-'z' '_']
 let upper = ['A'-'Z']
 let alpha = ['a'-'z' 'A'-'Z' '_']
 let alnum = ['a'-'z' 'A'-'Z' '0'-'9' '_']
+let integer = '-'? ['0'-'9' '_']+
+let float = '-'? ['0'-'9' '_']+ ('.' ['0'-'9' '_']+)? (['e' 'E'] ['0'-'9' '_']+)?
 
 rule token = parse
 | "()" { P.UNIT_VAL }
@@ -43,8 +45,17 @@ rule token = parse
 | '\n' { Lexing.new_line lexbuf; token lexbuf }
 | eof { P.EOF }
 | ws+ { token lexbuf }
-| ('0' ['o' 'O' 'x' 'X' 'b' 'B'])? ['0'-'9' '_']+ {
-    P.INT (int_of_string (Lexing.lexeme lexbuf))
+| integer {
+    let s = Lexing.lexeme lexbuf in
+    match int_of_string_opt s with
+    | None -> P.ERROR (Printf.sprintf "Invalid integer: %s\n" s)
+    | Some i -> P.INT i
+  }
+| float {
+    let s = Lexing.lexeme lexbuf in
+    match float_of_string_opt s with
+    | None -> P.ERROR (Printf.sprintf "Invalid float: %s\n" s)
+    | Some f -> P.FLOAT f
   }
 | '"' {
     Buffer.clear string_buf;

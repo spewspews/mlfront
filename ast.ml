@@ -32,12 +32,15 @@ end
 type exp =
 | Const of const
 | Plus of exp * exp
+| Var of sym
 
 type bind =
 | Value of {bound : Pattern.t; exp : exp}
 | Function of {sym : sym; args : sym list; exp : exp}
 
-type mutual_bind = {binds : bind list; is_rec : bool}
+type mutual_bind =
+| Let_bind of bind list
+| Rec_bind of bind list
 
 type prog = mutual_bind list
 

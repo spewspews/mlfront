@@ -1,6 +1,10 @@
-OBJ = parser.cmx lexer.cmx
+OBJ = ast.cmx util.cmx parser.cmx lexer.cmx mc.cmx
+TARG = mc
 
-build: $(OBJ)
+$(TARG): $(OBJ)
+	ocamlopt -o $(TARG) $^
+
+mc.cmx: mc.cmi
 
 parser.cmx: parser.ml parser.cmi ast.cmi
 	ocamlopt -c parser.ml
@@ -20,6 +24,10 @@ lexer.cmx: lexer.ml parser.cmi ast.cmi util.cmi
 lexer.ml: lexer.mll
 	ocamllex $<
 
+util.cmx: util.cmi ast.cmi
+
+ast.cmx: ast.cmi
+
 %.cmi: %.ml
 	ocamlopt -c $<
 
@@ -30,7 +38,7 @@ test: $(OBJ)
 	$(MAKE) -C unit_tests
 
 clean:
-	rm -f *.cm[ix] *.o parser.mli parser.ml lexer.ml parser.output
+	rm -f *.cm[ix] *.o parser.mli parser.ml lexer.ml parser.output a.out mc
 	$(MAKE) -C unit_tests clean
 
 .PHONY: clean build

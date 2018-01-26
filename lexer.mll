@@ -67,7 +67,7 @@ rule token = parse
     let Lexing.{pos_lnum=lnum} = Lexing.lexeme_start_p lexbuf in
     let n = Lexing.lexeme lexbuf in
     let s = A.{n; lnum} in
-    A.last_sym := s;
+    U.last_sym := s;
     match Hashtbl.find_opt keywords n with
     | Some kw -> kw
     | None -> P.LOWER_NAME s
@@ -75,7 +75,7 @@ rule token = parse
 | upper alnum* {
     let Lexing.{pos_lnum=lnum} = Lexing.lexeme_start_p lexbuf in
     let s = A.{n = (Lexing.lexeme lexbuf); lnum} in
-    A.last_sym := s;
+    U.last_sym := s;
     P.UPPER_NAME s
   }
 and string = parse

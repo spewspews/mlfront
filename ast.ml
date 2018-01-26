@@ -43,5 +43,3 @@ type mutual_bind =
 | Rec_bind of bind list
 
 type prog = mutual_bind list
-
-let last_sym = ref {n="No Sym"; lnum=0}

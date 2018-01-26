@@ -9,24 +9,21 @@ open Ast
 %token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
 %token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON ASTERISK
 
-%type <Ast.prog> ml
-%type <Ast.exp> exp
+%type <Ast.prog> prog
 
 %nonassoc AS
 %left ALT
 %nonassoc below_COMMA
 %left COMMA
-%nonassoc below_ARROW
 %right ARROW
-%nonassoc above_ARROW
 %right COLONCOLON
 %left PLUS
 
-%start ml
+%start prog
 
 %%
 
-ml:
+prog:
 | top_bindings EOF { List.rev $1 }
 
 top_bindings:
@@ -103,7 +100,7 @@ syms:
 
 rsyms:
 | LOWER_NAME { [ $1 ] }
-| syms LOWER_NAME { $2 :: $1 }
+| rsyms LOWER_NAME { $2 :: $1 }
 
 exp:
 | LOWER_NAME { Var $1 }

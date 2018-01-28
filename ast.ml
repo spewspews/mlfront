@@ -29,14 +29,17 @@ module Pattern = struct
   | Typed of {pattern : t; typ : Type_exp.t}
 end
 
-type exp =
-| Const of const
-| Plus of exp * exp
-| Var of sym
+module Exp = struct
+  type t =
+  | Const of const
+  | Plus of t * t
+  | Var of sym
+  | Typed of t * Type_exp.t
+end
 
 type bind =
-| Value of {bound : Pattern.t; exp : exp}
-| Function of {sym : sym; args : sym list; exp : exp}
+| Value of {bound : Pattern.t; exp : Exp.t}
+| Function of {sym : sym; args : sym list; exp : Exp.t}
 
 type mutual_bind =
 | Let_bind of bind list

@@ -6,10 +6,12 @@ module U = Util
 
 let keywords = U.hashtbl_create 293 [
   "and", P.AND;
+  "begin", P.BEGIN;
+  "end", P.END;
+  "false", P.FALSE;
   "let", P.LET;
   "rec", P.REC;
   "true", P.TRUE;
-  "false", P.FALSE;
 ]
 
 let string_buf = Buffer.create 200
@@ -37,6 +39,8 @@ rule token = parse
 | "->" { P.ARROW }
 | "::" { P.COLONCOLON }
 | "[]" { P.EMPTY }
+| '(' { P.LPAREN }
+| ')' { P.RPAREN }
 | '*' { P.ASTERISK }
 | '+' { P.PLUS }
 | ':' { P.COLON }

@@ -7,7 +7,7 @@ open Ast
 %token <float> FLOAT
 %token <string> STRING ERROR
 %token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
-%token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON ASTERISK
+%token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON ASTERISK BEGIN END
 
 %type <Ast.prog> prog
 
@@ -103,9 +103,11 @@ rsyms:
 | rsyms LOWER_NAME { $2 :: $1 }
 
 exp:
-| LOWER_NAME { Var $1 }
-| const { Const $1 }
-| exp PLUS exp { Plus ($1, $3) }
+| LOWER_NAME { Exp.Var $1 }
+| const { Exp.Const $1 }
+| BEGIN exp END { $2 }
+| LPAREN exp COLON type_exp RPAREN { Exp.Typed ($2, $4) }
+| exp PLUS exp { Exp.Plus ($1, $3) }
 
 const:
 | INT { Int $1 }

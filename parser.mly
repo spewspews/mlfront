@@ -147,6 +147,7 @@ exp1:
 | IF exp1 THEN exp1 { Exp.If {ante=$2; cons=$4; alt=Exp.Const Exp.Unit} }
 | exp1 ASSIGN exp1 { Exp.Assign {lhs=$1; rhs=$3} }
 | tuple_exp { Exp.Tuple (List.rev $1) }
+| exp2 { $1 }
 
 tuple_exp:
 | exp2 COMMA exp2 { [$3; $1] }

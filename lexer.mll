@@ -1,5 +1,4 @@
 {
-
 module P = Parser
 module A = Ast
 module U = Util
@@ -9,9 +8,14 @@ let keywords = U.hashtbl_create 293 [
   "begin", P.BEGIN;
   "end", P.END;
   "false", P.FALSE;
+  "fun", P.FUN;
+  "function", P.FUNCTION;
   "let", P.LET;
+  "match", P.MATCH;
   "rec", P.REC;
   "true", P.TRUE;
+  "with", P.WITH;
+  "in", P.IN;
 ]
 
 let string_buf = Buffer.create 200
@@ -22,7 +26,6 @@ let escape_char = function
 | 'r' -> '\r'
 | 't' -> '\t'
 | c -> c
-
 }
 
 let ws = [' ' '\t' '\r']

@@ -8,14 +8,17 @@ open Ast
 %token <string> STRING ERROR
 %token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
 %token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON ASTERISK BEGIN END
+%token MATCH WITH IN
 
 %type <Ast.prog> prog
 
 %nonassoc AS
 %left ALT
+%right THEN ELSE
+%right ASSIGN
 %nonassoc below_COMMA
 %left COMMA
-%right ARROW
+%left ARROW
 %right COLONCOLON
 %left PLUS
 
@@ -28,26 +31,26 @@ prog:
 
 top_bindings:
 |  { [] }
-|  top_bindings top_mutual_binding { $2 :: $1 }
+|  top_bindings top_binding { $2 :: $1 }
 
-top_mutual_binding:
-| top_binding_head top_binding_tail {
+top_binding:
+| binding_head binding_tail {
     let (b, recur) = $1 in
     let binds = b::$2 in
     if recur then Rec_bind binds else Let_bind binds
   }
 
-top_binding_head:
+binding_head:
 | LET binding { ($2, false) }
 | LET REC binding { ($3, true) }
 
-top_binding_tail:
+binding_tail:
 | { [] }
-| top_binding_tail AND binding { $3 :: $1 }
+| binding_tail AND binding { $3 :: $1 }
 
 binding:
 | pattern EQ exp { Value {bound = $1; exp = $3} }
-| LOWER_NAME syms EQ exp { Function {sym = $1; args = $2; exp = $4} }
+| LOWER_NAME parameters EQ exp { Function {sym = $1; args = $2; body = $4} }
 
 pattern:
 | LOWER_NAME { Pattern.Name $1 }
@@ -69,8 +72,8 @@ pattern_alt:
 | pattern ALT pattern { [$3; $1] }
 
 type_exp:
-| type_fun { Type_exp.Fun (List.rev $1) }
-| type_tuple { Type_exp.Tuple (List.rev $1) }
+| type_exp_fun { Type_exp.Fun (List.rev $1) }
+| type_exp_tuple { Type_exp.Tuple (List.rev $1) }
 | type_exp1 { $1 }
 
 type_exp1:
@@ -79,12 +82,12 @@ type_exp1:
 | LPAREN type_exp RPAREN { $2 }
 | type_constr { $1 }
 
-type_fun:
-| type_fun ARROW type_exp1 { $3 :: $1 }
+type_exp_fun:
+| type_exp_fun ARROW type_exp1 { $3 :: $1 }
 | type_exp1 ARROW type_exp1 { [$3; $1] }
 
-type_tuple:
-| type_tuple ASTERISK type_exp1 { $3 :: $1 }
+type_exp_tuple:
+| type_exp_tuple ASTERISK type_exp1 { $3 :: $1 }
 | type_exp1 ASTERISK type_exp1 { [$3; $1] }
 
 type_constr:
@@ -95,27 +98,74 @@ type_exps:
 | type_exps COMMA type_exp { $3 :: $1 }
 | type_exp COMMA type_exp { [$3; $1] }
 
-syms:
-| rsyms { List.rev $1 }
+parameters: rparameters { List.rev $1 }
+
+rparameters:
+| parameter { [$1] }
+| rparameters parameter { $2 :: $1 }
+
+parameter:
+| LOWER_NAME { Untyped_parameter $1 }
+| LPAREN LOWER_NAME COLON type_exp { Typed_parameter {parameter=$2; typ=Some $4} }
+
+syms: rsyms { List.rev $1 }
 
 rsyms:
 | LOWER_NAME { [ $1 ] }
 | rsyms LOWER_NAME { $2 :: $1 }
 
 exp:
-| LOWER_NAME { Exp.Var $1 }
-| const { Exp.Const $1 }
+| binding_head binding_tail IN exp {
+    let (b, recur) = $1 in
+    let binds = b::$2 in
+    let binding = if recur then Rec_bind binds else Let_bind binds in
+    Exp.Let {binding; body=$4}
+  }
+| MATCH exp WITH pattern_matching { Exp.Match {exp=$2; patterns=$4} }
+| FUN parameters ARROW exp { Exp.Fun {parameters=$2; body=$4} }
+| FUNCTION pattern_matching { Exp.Function $2 }
+| exp_sequence { Exp.Sequence (List.rev $1) }
+| exp1 { $1 }
+
+exp_sequence:
+| exp1 { [$1] }
+| exp1 SEMICOLON { [$1] }
+| exp_sequence SEMICOLON exp1 { $3 :: $1 }
+
+pattern_matching:
+| ALT pattern_match pattern_matching_tail { $2 :: (List.rev $3) }
+| pattern pattern_matching_tail { $1 :: (List.rev $2) }
+
+pattern_matching_tail:
+| { [] }
+| pattern_matching_tail ALT pattern_match { $3 :: $1 }
+
+pattern_match: pattern ARROW exp { Exp.{pattern=$1; body=$3} }
+
+exp1:
+| IF exp1 THEN exp1 ELSE exp1 { Exp.If {ante=$2; cons=$4; alt=$6} }
+| IF exp1 THEN exp1 { Exp.If {ante=$2; cons=$4; alt=Exp.Const Exp.Unit} }
+| exp1 ASSIGN exp1 { Exp.Assign {lhs=$1; rhs=$3} }
+| tuple_exp { Exp.Tuple (List.rev $1) }
+
+tuple_exp:
+| exp2 COMMA exp2 { [$3; $1] }
+| tuple_exp COMMA exp2 { $3 :: $1 }
+
+exp2:
+| LPAREN exp RPAREN { $2 }
 | BEGIN exp END { $2 }
-| LPAREN exp COLON type_exp RPAREN { Exp.Typed ($2, $4) }
-| exp PLUS exp { Exp.Plus ($1, $3) }
+| const { Exp.Const $1 }
+
 
 const:
-| INT { Int $1 }
-| FLOAT { Float $1 }
-| TRUE { Bool true }
-| FALSE { Bool false }
-| STRING { String $1 }
-| ERROR { Error $1 }
+| INT { Exp.Int $1 }
+| FLOAT { Exp.Float $1 }
+| TRUE { Exp.Bool true }
+| FALSE { Exp.Bool false }
+| UNIT_VAL { Exp.Unit }
+| STRING { Exp.String $1 }
+| ERROR { Exp.Error $1 }
 
 name:
 | LOWER_NAME { $1 }

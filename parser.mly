@@ -8,11 +8,12 @@ open Ast
 %token <string> STRING ERROR
 %token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
 %token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON ASTERISK BEGIN END
-%token MATCH WITH IN
+%token MATCH WITH IN FUN FUNCTION SEMICOLON IF
 
 %type <Ast.prog> prog
 
 %nonassoc AS
+%left SEMICOLON
 %left ALT
 %right THEN ELSE
 %right ASSIGN
@@ -37,7 +38,7 @@ top_binding:
 | binding_head binding_tail {
     let (b, recur) = $1 in
     let binds = b::$2 in
-    if recur then Rec_bind binds else Let_bind binds
+    if recur then Exp.Rec_binding binds else Exp.Let_binding binds
   }
 
 binding_head:
@@ -49,8 +50,8 @@ binding_tail:
 | binding_tail AND binding { $3 :: $1 }
 
 binding:
-| pattern EQ exp { Value {bound = $1; exp = $3} }
-| LOWER_NAME parameters EQ exp { Function {sym = $1; args = $2; body = $4} }
+| pattern EQ exp { Exp.Value {bound = $1; exp = $3} }
+| LOWER_NAME parameters EQ exp { Exp.Function {sym = $1; parameters = $2; body = $4} }
 
 pattern:
 | LOWER_NAME { Pattern.Name $1 }
@@ -105,46 +106,40 @@ rparameters:
 | rparameters parameter { $2 :: $1 }
 
 parameter:
-| LOWER_NAME { Untyped_parameter $1 }
-| LPAREN LOWER_NAME COLON type_exp { Typed_parameter {parameter=$2; typ=Some $4} }
-
-syms: rsyms { List.rev $1 }
-
-rsyms:
-| LOWER_NAME { [ $1 ] }
-| rsyms LOWER_NAME { $2 :: $1 }
+| LOWER_NAME { Parameter.Untyped $1 }
+| LPAREN LOWER_NAME COLON type_exp RPAREN { Parameter.Typed {parameter=$2; typ=$4} }
 
 exp:
 | binding_head binding_tail IN exp {
     let (b, recur) = $1 in
     let binds = b::$2 in
-    let binding = if recur then Rec_bind binds else Let_bind binds in
+    let binding = if recur then Exp.Rec_binding binds else Exp.Let_binding binds in
     Exp.Let {binding; body=$4}
   }
-| MATCH exp WITH pattern_matching { Exp.Match {exp=$2; patterns=$4} }
+| MATCH exp WITH pattern_matching { Exp.Match {exp=$2; pattern_matches=$4} }
 | FUN parameters ARROW exp { Exp.Fun {parameters=$2; body=$4} }
-| FUNCTION pattern_matching { Exp.Function $2 }
+| FUNCTION pattern_matching { Exp.Pattern_fun $2 }
 | exp_sequence { Exp.Sequence (List.rev $1) }
 | exp1 { $1 }
 
 exp_sequence:
-| exp1 { [$1] }
 | exp1 SEMICOLON { [$1] }
+| exp_sequence SEMICOLON exp_sequence { $3 @ $1 }
 | exp_sequence SEMICOLON exp1 { $3 :: $1 }
 
 pattern_matching:
-| ALT pattern_match pattern_matching_tail { $2 :: (List.rev $3) }
-| pattern pattern_matching_tail { $1 :: (List.rev $2) }
+| ALT pattern_matchings { List.rev $2 }
+| pattern_matchings { List.rev $1 }
 
-pattern_matching_tail:
-| { [] }
-| pattern_matching_tail ALT pattern_match { $3 :: $1 }
+pattern_matchings:
+| pattern_match { [$1] }
+| pattern_matchings ALT pattern_match { $3 :: $1 }
 
-pattern_match: pattern ARROW exp { Exp.{pattern=$1; body=$3} }
+pattern_match: pattern ARROW exp1 { Exp.{pattern=$1; body=$3} }
 
 exp1:
 | IF exp1 THEN exp1 ELSE exp1 { Exp.If {ante=$2; cons=$4; alt=$6} }
-| IF exp1 THEN exp1 { Exp.If {ante=$2; cons=$4; alt=Exp.Const Exp.Unit} }
+| IF exp1 THEN exp1 { Exp.If {ante=$2; cons=$4; alt=Exp.Const Const.Unit} }
 | exp1 ASSIGN exp1 { Exp.Assign {lhs=$1; rhs=$3} }
 | tuple_exp { Exp.Tuple (List.rev $1) }
 | exp2 { $1 }
@@ -154,18 +149,19 @@ tuple_exp:
 | tuple_exp COMMA exp2 { $3 :: $1 }
 
 exp2:
+| LPAREN exp COLON type_exp RPAREN { Exp.Typed ($2, $4) }
 | LPAREN exp RPAREN { $2 }
 | BEGIN exp END { $2 }
 | const { Exp.Const $1 }
 
 const:
-| INT { Exp.Int $1 }
-| FLOAT { Exp.Float $1 }
-| TRUE { Exp.Bool true }
-| FALSE { Exp.Bool false }
-| UNIT_VAL { Exp.Unit }
-| STRING { Exp.String $1 }
-| ERROR { Exp.Error $1 }
+| INT { Const.Int $1 }
+| FLOAT { Const.Float $1 }
+| TRUE { Const.Bool true }
+| FALSE { Const.Bool false }
+| UNIT_VAL { Const.Unit }
+| STRING { Const.String $1 }
+| ERROR { Const.Error $1 }
 
 name:
 | LOWER_NAME { $1 }

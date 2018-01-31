@@ -40,21 +40,26 @@ end
 
 module Exp = struct
   type t =
+  | Let of {binding:bindings; body:t}
   | Const of Const.t
   | Fun of {parameters:Parameter.t list; body:t}
-  | Function of pattern_match list
-  | Let of {binding:let_bindings; body:t}
   | Match of {exp:t; pattern_matches:pattern_match list}
+  | Pattern_fun of pattern_match list
   | Plus of t * t
+  | Sequence of t list
   | Typed of t * Type_exp.t
   | Var of sym
+  | If of {ante:t; cons:t; alt:t}
+  | Unit
+  | Assign of {lhs:t; rhs:t}
+  | Tuple of t list
   and pattern_match = {pattern:Pattern.t; body:t}
   and binding =
-  | Value_binding of {bound:Pattern.t; exp:t}
-  | Function_binding of {sym:sym; parameters:Parameter.t list; body:t}
-  and let_bindings =
-  | Let_bind of binding list
-  | Rec_bind of binding list
+  | Value of {bound:Pattern.t; exp:t}
+  | Function of {sym:sym; parameters:Parameter.t list; body:t}
+  and bindings =
+  | Let_binding of binding list
+  | Rec_binding of binding list
 end
 
-type prog = Exp.let_bindings list
+type prog = Exp.bindings list

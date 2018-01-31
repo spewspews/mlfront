@@ -10,12 +10,13 @@ let keywords = U.hashtbl_create 293 [
   "false", P.FALSE;
   "fun", P.FUN;
   "function", P.FUNCTION;
+  "if", P.IF;
+  "in", P.IN;
   "let", P.LET;
   "match", P.MATCH;
   "rec", P.REC;
   "true", P.TRUE;
   "with", P.WITH;
-  "in", P.IN;
 ]
 
 let string_buf = Buffer.create 200
@@ -47,6 +48,7 @@ rule token = parse
 | '*' { P.ASTERISK }
 | '+' { P.PLUS }
 | ':' { P.COLON }
+| ';' { P.SEMICOLON }
 | '=' { P.EQ }
 | '\'' { P.SINGLEQ }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }

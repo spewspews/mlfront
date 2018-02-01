@@ -14,7 +14,8 @@ open Ast
 
 %nonassoc AS
 %left SEMICOLON
-%left ALT
+%nonassoc below_ALT
+%right ALT
 %right THEN ELSE
 %right ASSIGN
 %nonassoc below_COMMA
@@ -129,13 +130,13 @@ exp_sequence:
 
 pattern_matching:
 | ALT pattern_matchings { List.rev $2 }
-| pattern_matchings { List.rev $1 }
+| pattern_matchings %prec below_ALT { List.rev $1 }
 
 pattern_matchings:
 | pattern_match { [$1] }
 | pattern_matchings ALT pattern_match { $3 :: $1 }
 
-pattern_match: pattern ARROW exp1 { Exp.{pattern=$1; body=$3} }
+pattern_match: pattern ARROW exp { Exp.{pattern=$1; body=$3} }
 
 exp1:
 | IF exp1 THEN exp1 ELSE exp1 { Exp.If {ante=$2; cons=$4; alt=$6} }

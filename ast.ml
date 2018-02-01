@@ -40,26 +40,37 @@ end
 
 module Exp = struct
   type t =
-  | Let of {binding:bindings; body:t}
+  | Assign of binary_op
   | Const of Const.t
+  | Equals of binary_op
   | Fun of {parameters:Parameter.t list; body:t}
-  | Match of {exp:t; pattern_matches:pattern_match list}
-  | Pattern_fun of pattern_match list
-  | Plus of t * t
-  | Sequence of t list
-  | Typed of t * Type_exp.t
-  | Var of sym
+  | Greater of binary_op
+  | Greater_eq of binary_op
   | If of {ante:t; cons:t; alt:t}
-  | Unit
-  | Assign of {lhs:t; rhs:t}
+  | Less of binary_op
+  | Less_eq of binary_op
+  | Let of {binding:bindings; body:t}
+  | Match of {exp:t; pattern_matches:pattern_match list}
+  | Minus of binary_op
+  | Multiply of binary_op
+  | Not_eq of binary_op
+  | Pattern_fun of pattern_match list
+  | Phys_equals of binary_op
+  | Plus of binary_op
+  | Sequence of t list
   | Tuple of t list
-  and pattern_match = {pattern:Pattern.t; body:t}
+  | Type_constr of {constr:sym; exp:t}
+  | Typed of t * Type_exp.t
+  | Unit
+  | Var of sym
   and binding =
   | Value of {bound:Pattern.t; exp:t}
   | Function of {sym:sym; parameters:Parameter.t list; body:t}
   and bindings =
   | Let_binding of binding list
   | Rec_binding of binding list
+  and pattern_match = {pattern:Pattern.t; body:t}
+  and binary_op = {lhs:t; rhs:t}
 end
 
 type prog = Exp.bindings list

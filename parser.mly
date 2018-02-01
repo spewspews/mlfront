@@ -8,7 +8,8 @@ open Ast
 %token <string> STRING ERROR
 %token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
 %token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON ASTERISK BEGIN END
-%token MATCH WITH IN FUN FUNCTION SEMICOLON IF
+%token MATCH WITH IN FUN FUNCTION SEMICOLON IF PLUS EQEQ LESS GREATER
+%token LESSEQ GREATEREQ MINUS NOTEQ
 
 %type <Ast.prog> prog
 
@@ -22,7 +23,9 @@ open Ast
 %left COMMA
 %left ARROW
 %right COLONCOLON
-%left PLUS
+%left LESS GREATER LESSEQ GREATEREQ NOTEQ
+%left PLUS MINUS
+%left ASTERISK
 
 %start prog
 
@@ -141,7 +144,7 @@ pattern_match: pattern ARROW exp { Exp.{pattern=$1; body=$3} }
 exp1:
 | IF exp1 THEN exp1 ELSE exp1 { Exp.If {ante=$2; cons=$4; alt=$6} }
 | IF exp1 THEN exp1 { Exp.If {ante=$2; cons=$4; alt=Exp.Const Const.Unit} }
-| exp1 ASSIGN exp1 { Exp.Assign {lhs=$1; rhs=$3} }
+| exp1 ASSIGN exp1 { Exp.Assign Exp.{lhs=$1; rhs=$3} }
 | tuple_exp { Exp.Tuple (List.rev $1) }
 | exp2 { $1 }
 
@@ -150,6 +153,20 @@ tuple_exp:
 | tuple_exp COMMA exp2 { $3 :: $1 }
 
 exp2:
+| exp3 ASTERISK exp3 { Exp.Multiply Exp.{lhs=$1; rhs=$3} }
+| exp3 EQ exp3 { Exp.Equals Exp.{lhs=$1; rhs=$3} }
+| exp3 EQEQ exp3 { Exp.Phys_equals Exp.{lhs=$1; rhs=$3} }
+| exp3 GREATER exp3 { Exp.Greater Exp.{lhs=$1; rhs=$3} }
+| exp3 GREATEREQ exp3 { Exp.Greater_eq Exp.{lhs=$1; rhs=$3} }
+| exp3 LESS exp3 { Exp.Less Exp.{lhs=$1; rhs=$3} }
+| exp3 LESSEQ exp3 { Exp.Less_eq Exp.{lhs=$1; rhs=$3} }
+| exp3 MINUS exp3 { Exp.Minus Exp.{lhs=$1; rhs=$3} }
+| exp3 NOTEQ exp3 { Exp.Not_eq Exp.{lhs=$1; rhs=$3} }
+| exp3 PLUS exp3 { Exp.Plus Exp.{lhs=$1; rhs=$3} }
+| exp3 { $1 }
+
+exp3:
+| UPPER_NAME exp3 { Exp.Type_constr {constr=$1; exp=$2} }
 | LPAREN exp COLON type_exp RPAREN { Exp.Typed ($2, $4) }
 | LPAREN exp RPAREN { $2 }
 | BEGIN exp END { $2 }

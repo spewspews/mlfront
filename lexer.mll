@@ -42,13 +42,19 @@ rule token = parse
 | "()" { P.UNIT_VAL }
 | "->" { P.ARROW }
 | "::" { P.COLONCOLON }
+| "<=" { P.LESSEQ }
+| "<>" { P.NOTEQ }
+| "==" { P.EQEQ }
+| ">=" { P.GREATEREQ }
 | "[]" { P.EMPTY }
 | '(' { P.LPAREN }
 | ')' { P.RPAREN }
 | '*' { P.ASTERISK }
 | '+' { P.PLUS }
+| '-' { P.MINUS }
 | ':' { P.COLON }
 | ';' { P.SEMICOLON }
+| '<' { P.LESS }
 | '=' { P.EQ }
 | '\'' { P.SINGLEQ }
 | '\n' { Lexing.new_line lexbuf; token lexbuf }

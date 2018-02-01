@@ -6,7 +6,7 @@ $(TARG): $(OBJ)
 
 mc.cmx: mc.cmi
 
-parser.cmx: parser.ml parser.cmi ast.cmi
+parser.cmx: parser.ml parser.cmi
 	ocamlopt -c parser.ml
 
 parser.cmi: parser.mli ast.cmi
@@ -24,7 +24,10 @@ lexer.cmx: lexer.ml parser.cmi ast.cmi util.cmi
 lexer.ml: lexer.mll
 	ocamllex $<
 
-util.cmx: util.cmi ast.cmi
+util.cmx: util.cmi
+
+util.cmi: util.ml ast.cmi
+	ocamlopt -c $<
 
 ast.cmx: ast.cmi
 

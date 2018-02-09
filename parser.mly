@@ -7,9 +7,9 @@ open Ast
 %token <float> FLOAT
 %token <string> STRING ERROR
 %token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
-%token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON ASTERISK BEGIN END
+%token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON MUL BEGIN END
 %token MATCH WITH IN FUN FUNCTION SEMICOLON IF PLUS EQEQ LESS GREATER
-%token LESSEQ GREATEREQ MINUS NOTEQ
+%token LESSEQ GREATEREQ MINUS NOTEQ DIV NOT LNOT
 
 %type <Ast.prog> prog
 
@@ -21,11 +21,14 @@ open Ast
 %right ASSIGN
 %nonassoc below_COMMA
 %left COMMA
+%right OR
+%right AND
 %left ARROW
+%nonassoc LESS GREATER LESSEQ GREATEREQ NOTEQ EQ
 %right COLONCOLON
-%left LESS GREATER LESSEQ GREATEREQ NOTEQ
 %left PLUS MINUS
-%left ASTERISK
+%left MUL DIV MOD LAND LOR LXOR LNOT
+%right LSL LSR ASR
 
 %start prog
 
@@ -92,8 +95,8 @@ type_exp_fun:
 | type_exp1 ARROW type_exp1 { [$3; $1] }
 
 type_exp_tuple:
-| type_exp_tuple ASTERISK type_exp1 { $3 :: $1 }
-| type_exp1 ASTERISK type_exp1 { [$3; $1] }
+| type_exp_tuple MUL type_exp1 { $3 :: $1 }
+| type_exp1 MUL type_exp1 { [$3; $1] }
 
 type_constr:
 | type_exp1 LOWER_NAME { Type_exp.Constr {exps=[$1]; constr=$2} }
@@ -153,15 +156,25 @@ tuple_exp:
 | tuple_exp COMMA exp2 { $3 :: $1 }
 
 exp2:
-| exp3 ASTERISK exp3 { Exp.Multiply Exp.{lhs=$1; rhs=$3} }
+| LNOT exp3 { Exp.Lnot $2 }
+| NOT exp3 { Exp.Not $2 }
+| exp3 ASR exp3 { Exp.Asr Exp.{lhs=$1; rhs=$3} }
+| exp3 DIV exp3 { Exp.Divide Exp.{lhs=$1; rhs=$3} }
 | exp3 EQ exp3 { Exp.Equals Exp.{lhs=$1; rhs=$3} }
-| exp3 EQEQ exp3 { Exp.Phys_equals Exp.{lhs=$1; rhs=$3} }
 | exp3 GREATER exp3 { Exp.Greater Exp.{lhs=$1; rhs=$3} }
 | exp3 GREATEREQ exp3 { Exp.Greater_eq Exp.{lhs=$1; rhs=$3} }
+| exp3 LAND exp3 { Exp.Land Exp.{lhs=$1; rhs=$3} }
 | exp3 LESS exp3 { Exp.Less Exp.{lhs=$1; rhs=$3} }
 | exp3 LESSEQ exp3 { Exp.Less_eq Exp.{lhs=$1; rhs=$3} }
+| exp3 LOR exp3 { Exp.Lor Exp.{lhs=$1; rhs=$3} }
+| exp3 LSL exp3 { Exp.Lsl Exp.{lhs=$1; rhs=$3} }
+| exp3 LSR exp3 { Exp.Lsr Exp.{lhs=$1; rhs=$3} }
+| exp3 LXOR exp3 { Exp.Lxor Exp.{lhs=$1; rhs=$3} }
 | exp3 MINUS exp3 { Exp.Minus Exp.{lhs=$1; rhs=$3} }
+| exp3 MOD exp3 { Exp.Mod Exp.{lhs=$1; rhs=$3} }
+| exp3 MUL exp3 { Exp.Multiply Exp.{lhs=$1; rhs=$3} }
 | exp3 NOTEQ exp3 { Exp.Not_eq Exp.{lhs=$1; rhs=$3} }
+| exp3 OR exp3 { Exp.Or Exp.{lhs=$1; rhs=$3} }
 | exp3 PLUS exp3 { Exp.Plus Exp.{lhs=$1; rhs=$3} }
 | exp3 { $1 }
 

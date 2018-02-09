@@ -49,9 +49,10 @@ rule token = parse
 | "[]" { P.EMPTY }
 | '(' { P.LPAREN }
 | ')' { P.RPAREN }
-| '*' { P.ASTERISK }
+| '*' { P.MUL }
 | '+' { P.PLUS }
 | '-' { P.MINUS }
+| '/' { P.DIV }
 | ':' { P.COLON }
 | ';' { P.SEMICOLON }
 | '<' { P.LESS }

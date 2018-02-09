@@ -40,22 +40,32 @@ end
 
 module Exp = struct
   type t =
+  | Asr of binary_op
   | Assign of binary_op
   | Const of Const.t
+  | Divide of binary_op
   | Equals of binary_op
   | Fun of {parameters:Parameter.t list; body:t}
   | Greater of binary_op
   | Greater_eq of binary_op
   | If of {ante:t; cons:t; alt:t}
+  | Land of binary_op
   | Less of binary_op
   | Less_eq of binary_op
   | Let of {binding:bindings; body:t}
+  | Lnot of t
+  | Lor of binary_op
+  | Lsl of binary_op
+  | Lsr of binary_op
+  | Lxor of binary_op
   | Match of {exp:t; pattern_matches:pattern_match list}
   | Minus of binary_op
+  | Mod of binary_op
   | Multiply of binary_op
+  | Not of t
   | Not_eq of binary_op
+  | Or of binary_op
   | Pattern_fun of pattern_match list
-  | Phys_equals of binary_op
   | Plus of binary_op
   | Sequence of t list
   | Tuple of t list

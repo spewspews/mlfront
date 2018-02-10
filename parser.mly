@@ -158,25 +158,33 @@ tuple_exp:
 exp2:
 | LNOT exp3 { Exp.Lnot $2 }
 | NOT exp3 { Exp.Not $2 }
-| exp3 ASR exp3 { Exp.Asr Exp.{lhs=$1; rhs=$3} }
-| exp3 DIV exp3 { Exp.Divide Exp.{lhs=$1; rhs=$3} }
-| exp3 EQ exp3 { Exp.Equals Exp.{lhs=$1; rhs=$3} }
-| exp3 GREATER exp3 { Exp.Greater Exp.{lhs=$1; rhs=$3} }
-| exp3 GREATEREQ exp3 { Exp.Greater_eq Exp.{lhs=$1; rhs=$3} }
-| exp3 LAND exp3 { Exp.Land Exp.{lhs=$1; rhs=$3} }
-| exp3 LESS exp3 { Exp.Less Exp.{lhs=$1; rhs=$3} }
-| exp3 LESSEQ exp3 { Exp.Less_eq Exp.{lhs=$1; rhs=$3} }
-| exp3 LOR exp3 { Exp.Lor Exp.{lhs=$1; rhs=$3} }
-| exp3 LSL exp3 { Exp.Lsl Exp.{lhs=$1; rhs=$3} }
-| exp3 LSR exp3 { Exp.Lsr Exp.{lhs=$1; rhs=$3} }
-| exp3 LXOR exp3 { Exp.Lxor Exp.{lhs=$1; rhs=$3} }
-| exp3 MINUS exp3 { Exp.Minus Exp.{lhs=$1; rhs=$3} }
-| exp3 MOD exp3 { Exp.Mod Exp.{lhs=$1; rhs=$3} }
-| exp3 MUL exp3 { Exp.Multiply Exp.{lhs=$1; rhs=$3} }
-| exp3 NOTEQ exp3 { Exp.Not_eq Exp.{lhs=$1; rhs=$3} }
-| exp3 OR exp3 { Exp.Or Exp.{lhs=$1; rhs=$3} }
-| exp3 PLUS exp3 { Exp.Plus Exp.{lhs=$1; rhs=$3} }
+| exp3 ASR exp3 { Exp.(Asr {lhs=$1; rhs=$3}) }
+| exp3 COLONCOLON exp3 { Exp.(Cons {lhs=$1; rhs=$3}) }
+| exp3 DIV exp3 { Exp.(Divide {lhs=$1; rhs=$3}) }
+| exp3 EQ exp3 { Exp.(Equals {lhs=$1; rhs=$3}) }
+| exp3 GREATER exp3 { Exp.(Greater {lhs=$1; rhs=$3}) }
+| exp3 GREATEREQ exp3 { Exp.(Greater_eq {lhs=$1; rhs=$3}) }
+| exp3 LAND exp3 { Exp.(Land {lhs=$1; rhs=$3}) }
+| exp3 LESS exp3 { Exp.(Less {lhs=$1; rhs=$3}) }
+| exp3 LESSEQ exp3 { Exp.(Less_eq {lhs=$1; rhs=$3}) }
+| exp3 LOR exp3 { Exp.(Lor {lhs=$1; rhs=$3}) }
+| exp3 LSL exp3 { Exp.(Lsl {lhs=$1; rhs=$3}) }
+| exp3 LSR exp3 { Exp.(Lsr {lhs=$1; rhs=$3}) }
+| exp3 LXOR exp3 { Exp.(Lxor {lhs=$1; rhs=$3}) }
+| exp3 MINUS exp3 { Exp.(Minus {lhs=$1; rhs=$3}) }
+| exp3 MOD exp3 { Exp.(Mod {lhs=$1; rhs=$3}) }
+| exp3 MUL exp3 { Exp.(Multiply {lhs=$1; rhs=$3}) }
+| exp3 NOTEQ exp3 { Exp.(Not_eq {lhs=$1; rhs=$3}) }
+| exp3 OR exp3 { Exp.(Or {lhs=$1; rhs=$3}) }
+| exp3 PLUS exp3 { Exp.(Plus {lhs=$1; rhs=$3}) }
 | exp3 { $1 }
+| exp_app { Exp.App $1 }
+
+exp_app: exp_app1 { Exp.(let {fn; args} = $1 in {fn; args=List.rev args}) }
+
+exp_app1:
+| exp3 exp3 { Exp.{fn=$1; args=[$2]} }
+| exp_app1 exp3 { Exp.(let {fn; args} = $1 in {fn; args=$2::args}) }
 
 exp3:
 | UPPER_NAME exp3 { Exp.Type_constr {constr=$1; exp=$2} }

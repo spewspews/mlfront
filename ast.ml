@@ -73,6 +73,8 @@ module Exp = struct
   | Typed of t * Type_exp.t
   | Unit
   | Var of sym
+  | Cons of binary_op
+  | App of app
   and binding =
   | Value of {bound:Pattern.t; exp:t}
   | Function of {sym:sym; parameters:Parameter.t list; body:t}
@@ -81,6 +83,7 @@ module Exp = struct
   | Rec_binding of binding list
   and pattern_match = {pattern:Pattern.t; body:t}
   and binary_op = {lhs:t; rhs:t}
+  and app = {fn:t; args:t list}
 end
 
 type prog = Exp.bindings list

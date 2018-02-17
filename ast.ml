@@ -75,6 +75,7 @@ module Exp = struct
   | Var of sym
   | Cons of binary_op
   | App of app
+  | Neg of t
   and binding =
   | Value of {bound:Pattern.t; exp:t}
   | Function of {sym:sym; parameters:Parameter.t list; body:t}

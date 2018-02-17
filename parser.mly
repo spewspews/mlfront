@@ -8,8 +8,9 @@ open Ast
 %token <string> STRING ERROR
 %token EOF LET EQ REC AND PLUS TRUE FALSE COMMA LPAREN RPAREN EMPTY UNIT_VAL
 %token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON MUL BEGIN END
-%token MATCH WITH IN FUN FUNCTION SEMICOLON IF PLUS EQEQ LESS GREATER
-%token LESSEQ GREATEREQ MINUS NOTEQ DIV NOT LNOT
+%token MATCH WITH IN FUN FUNCTION SEMICOLON IF PLUS LESS GREATER
+%token LESSEQ GREATEREQ MINUS NOTEQ DIV NOT LNOT LAND LOR LSL LSR
+%token ASR
 
 %type <Ast.prog> prog
 
@@ -29,28 +30,30 @@ open Ast
 %left PLUS MINUS
 %left MUL DIV MOD LAND LOR LXOR LNOT
 %right LSL LSR ASR
+%nonassoc UNARY
 
 %start prog
 
 %%
 
 prog:
-| top_bindings EOF { List.rev $1 }
+  | top_bindings EOF { List.rev $1 }
 
 top_bindings:
-|  { [] }
-|  top_bindings top_binding { $2 :: $1 }
+  |  { [] }
+  |  top_bindings top_binding { $2 :: $1 }
 
 top_binding:
-| binding_head binding_tail {
-    let (b, recur) = $1 in
-    let binds = b::$2 in
-    if recur then Exp.Rec_binding binds else Exp.Let_binding binds
-  }
+  | binding_head binding_tail
+    {
+      let (b, recur) = $1 in
+      let binds = b::$2 in
+      if recur then Exp.Rec_binding binds else Exp.Let_binding binds
+    }
 
 binding_head:
-| LET binding { ($2, false) }
-| LET REC binding { ($3, true) }
+  | LET binding { ($2, false) }
+  | LET REC binding { ($3, true) }
 
 binding_tail:
 | { [] }
@@ -177,8 +180,9 @@ exp2:
 | exp3 NOTEQ exp3 { Exp.(Not_eq {lhs=$1; rhs=$3}) }
 | exp3 OR exp3 { Exp.(Or {lhs=$1; rhs=$3}) }
 | exp3 PLUS exp3 { Exp.(Plus {lhs=$1; rhs=$3}) }
-| exp3 { $1 }
+| MINUS exp3 %prec UNARY { Exp.Neg $2 }
 | exp_app { Exp.App $1 }
+| exp3 { $1 }
 
 exp_app: exp_app1 { Exp.(let {fn; args} = $1 in {fn; args=List.rev args}) }
 

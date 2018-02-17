@@ -6,6 +6,7 @@ module U = Util
 let keywords =
   U.hashtbl_create 293 [
     "and", P.AND;
+    "asr", P.ASR;
     "begin", P.BEGIN;
     "end", P.END;
     "false", P.FALSE;
@@ -13,16 +14,16 @@ let keywords =
     "function", P.FUNCTION;
     "if", P.IF;
     "in", P.IN;
+    "land", P.LAND;
     "let", P.LET;
+    "lor", P.LOR;
+    "lsl", P.LSL;
+    "lsr", P.LSR;
     "match", P.MATCH;
     "rec", P.REC;
     "true", P.TRUE;
     "with", P.WITH;
-    "land", P.LAND;
-    "lor", P.LOR;
-    "lsl", P.LSL;
-    "lsr", P.LSR;
-    "asr", P.ASR;
+    "lnot", P.LNOT;
   ]
 
 let string_buf = Buffer.create 200
@@ -62,8 +63,12 @@ rule token = parse
   | ';' { P.SEMICOLON }
   | '<' { P.LESS }
   | '=' { P.EQ }
+  | '[' { P.LBRACK }
   | '\'' { P.SINGLEQ }
   | '\n' { Lexing.new_line lexbuf; token lexbuf }
+  | ']' { P.RBRACK }
+  | '{' { P.LBRACE }
+  | '}' { P.RBRACE }
   | eof { P.EOF }
   | ws+ { token lexbuf }
   | integer

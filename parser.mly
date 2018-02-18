@@ -40,7 +40,7 @@ prog:
 prog1:
   | { [] }
   | top_binding prog1 { Exp $1 :: $2 }
-  | type_binding prog1 { Type $1 :: $2 }
+  | top_type_binding prog1 { Type $1 :: $2 }
 
 top_binding:
   | binding_head binding_tail
@@ -230,10 +230,17 @@ const:
   | STRING { Const.String $1 }
   | ERROR { Const.Error $1 }
 
+top_type_binding:
+  | TYPE type_bindings { () }
+
+type_bindings:
+  | type_binding { () }
+  | type_bindings AND type_binding { () }
+
 type_binding:
-  | TYPE type_param LOWER_NAME EQ type_exp { () }
-  | TYPE type_param LOWER_NAME EQ LBRACE type_fields RBRACE { () }
-  | TYPE type_param LOWER_NAME EQ type_variants { () }
+  | type_param LOWER_NAME EQ type_exp { () }
+  | type_param LOWER_NAME EQ LBRACE type_fields RBRACE { () }
+  | type_param LOWER_NAME EQ type_variants { () }
 
 type_param:
   | { () }

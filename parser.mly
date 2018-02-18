@@ -138,8 +138,8 @@ exp:
 
 exp_sequence:
   | exp1 SEMICOLON { [$1] }
-  | exp_sequence SEMICOLON exp_sequence { $3 @ $1 }
   | exp_sequence SEMICOLON exp1 { $3 :: $1 }
+  | exp_sequence SEMICOLON exp1 SEMICOLON { $3 :: $1 }
 
 pattern_matching:
   | ALT pattern_matching1 { List.rev $2 }
@@ -206,9 +206,12 @@ exp3:
   | LBRACE fields RBRACE { Exp.Record $2 }
 
 fields:
+  | fields1 { List.rev $1 }
+  | fields1 SEMICOLON { List.rev $1 }
+
+fields1:
   | field { [$1] }
-  | fields SEMICOLON { $1 }
-  | fields SEMICOLON fields { $3 @ $1 }
+  | fields1 SEMICOLON field { $3 :: $1 }
 
 field:
   | LOWER_NAME field_type { Exp.{field=$1; typ=$2; exp=Exp.Var $1} }

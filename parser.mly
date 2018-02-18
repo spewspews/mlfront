@@ -10,7 +10,7 @@ open Ast
 %token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON MUL BEGIN END
 %token MATCH WITH IN FUN FUNCTION SEMICOLON IF PLUS LESS GREATER
 %token LESSEQ GREATEREQ MINUS NOTEQ DIV NOT LNOT LAND LOR LSL LSR
-%token ASR LBRACE RBRACE LBRACK RBRACK
+%token ASR LBRACE RBRACE LBRACK RBRACK LBRACKARR RBRACKARR TYPE
 
 %type <Ast.prog> prog
 
@@ -37,11 +37,12 @@ open Ast
 %%
 
 prog:
-  | top_bindings EOF { List.rev $1 }
+  | prog1 { List.rev $1 }
 
-top_bindings:
+prog1:
   | { [] }
-  | top_bindings top_binding { $2 :: $1 }
+  | top_binding prog1 { Exp $1 :: $2 }
+  | type_binding prog1 { Type $1 :: $2 }
 
 top_binding:
   | binding_head binding_tail
@@ -184,6 +185,8 @@ exp2:
   | exp2 PLUS exp2 { Exp.(Plus {lhs=$1; rhs=$3}) }
   | exp3 { $1 }
   | exp_app { Exp.App $1 }
+  | LBRACK exp_sequence RBRACK { Exp.List (List.rev $2) }
+  | LBRACKARR exp_sequence RBRACKARR { Exp.Arr (List.rev $2) }
 
 exp_app: exp_app1 { Exp.(let {fn; args} = $1 in {fn; args=List.rev args}) }
 
@@ -221,6 +224,9 @@ const:
   | UNIT_VAL { Const.Unit }
   | STRING { Const.String $1 }
   | ERROR { Const.Error $1 }
+
+type_binding:
+  | TYPE { () }
 
 name:
   | LOWER_NAME { $1 }

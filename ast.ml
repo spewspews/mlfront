@@ -41,6 +41,7 @@ end
 module Exp = struct
   type t =
     | App of app
+    | Arr of t list
     | Asr of binary_op
     | Assign of binary_op
     | Cons of binary_op
@@ -55,6 +56,7 @@ module Exp = struct
     | Less of binary_op
     | Less_eq of binary_op
     | Let of {binding:bindings; body:t}
+    | List of t list
     | Lnot of t
     | Lor of binary_op
     | Lsl of binary_op
@@ -70,16 +72,16 @@ module Exp = struct
     | Or of binary_op
     | Pattern_fun of pattern_match list
     | Plus of binary_op
+    | Record of field list
     | Sequence of t list
     | Tuple of t list
     | Type_constr of {constr:sym; exp:t}
     | Typed of t * Type_exp.t
     | Unit
     | Var of sym
-    | Record of field list
   and binding =
-    | Value of {bound:Pattern.t; exp:t}
     | Function of {sym:sym; parameters:Parameter.t list; body:t}
+    | Value of {bound:Pattern.t; exp:t}
   and bindings =
     | Let_binding of binding list
     | Rec_binding of binding list
@@ -89,4 +91,8 @@ module Exp = struct
   and field = {field:sym; typ:Type_exp.t option; exp:t}
 end
 
-type prog = Exp.bindings list
+type top =
+  | Exp of Exp.bindings
+  | Type of unit
+
+type prog = top list

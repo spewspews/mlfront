@@ -16,14 +16,15 @@ let keywords =
     "in", P.IN;
     "land", P.LAND;
     "let", P.LET;
+    "lnot", P.LNOT;
     "lor", P.LOR;
     "lsl", P.LSL;
     "lsr", P.LSR;
     "match", P.MATCH;
     "rec", P.REC;
     "true", P.TRUE;
+    "type", P.TYPE;
     "with", P.WITH;
-    "lnot", P.LNOT;
   ]
 
 let string_buf = Buffer.create 200
@@ -71,6 +72,8 @@ rule token = parse
   | '}' { P.RBRACE }
   | eof { P.EOF }
   | ws+ { token lexbuf }
+  | "[|" { P.LBRACKARR }
+  | "|]" { P.RBRACKARR }
   | integer
     {
       let s = Lexing.lexeme lexbuf in

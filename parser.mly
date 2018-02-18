@@ -10,17 +10,15 @@ open Ast
 %token AS COLON SINGLEQ UNDERSCORE ARROW COLONCOLON MUL BEGIN END
 %token MATCH WITH IN FUN FUNCTION SEMICOLON IF PLUS LESS GREATER
 %token LESSEQ GREATEREQ MINUS NOTEQ DIV NOT LNOT LAND LOR LSL LSR
-%token ASR LBRACE RBRACE LBRACK RBRACK LBRACKARR RBRACKARR TYPE
+%token ASR LBRACE RBRACE LBRACK RBRACK LBRACKARR RBRACKARR TYPE OF
 
 %type <Ast.prog> prog
 
 %nonassoc AS
 %left SEMICOLON
-%nonassoc below_ALT
-%right ALT
+%left ALT
 %right THEN ELSE
 %right ASSIGN
-%nonassoc below_COMMA
 %left COMMA
 %right OR
 %right AND
@@ -65,23 +63,27 @@ binding:
   | LOWER_NAME parameters EQ exp { Exp.Function {sym = $1; parameters = $2; body = $4} }
 
 pattern:
-  | LOWER_NAME { Pattern.Name $1 }
-  | LPAREN pattern COLON type_exp RPAREN { Pattern.Typed {pattern=$2; typ=$4} }
   | pattern AS LOWER_NAME { Pattern.As {pattern=$1; bound_var=$3} }
-  | patterns %prec below_COMMA { Pattern.Tuple (List.rev $1) }
-  | pattern_alt %prec below_COMMA { Pattern.Alt (List.rev $1) }
-  | LPAREN pattern RPAREN { $2 }
-  | UPPER_NAME pattern %prec below_COMMA { Pattern.Type_constr {constr=$1; body=$2} }
-  | const { Pattern.Const $1 }
+  | pattern_tuple { Pattern.Tuple (List.rev $1) }
+  | pattern_alt { Pattern.Alt (List.rev $1) }
   | pattern COLONCOLON pattern { Pattern.Cons ($1, $3) }
-
-patterns:
-  | patterns COMMA pattern { $3 :: $1 }
-  | pattern COMMA pattern { [$3; $1] }
+  | pattern1 { $1 }
 
 pattern_alt:
-  | pattern_alt ALT pattern { $3 :: $1 }
-  | pattern ALT pattern { [$3; $1] }
+  | pattern_alt ALT pattern1 { $3 :: $1 }
+  | pattern1 ALT pattern1 { [$3; $1] }
+
+pattern_tuple:
+  | pattern_tuple COMMA pattern1 { $3 :: $1 }
+  | pattern1 COMMA pattern1 { [$3; $1] }
+
+pattern1:
+  | UPPER_NAME pattern1 { Pattern.Type_constr {constr=$1; body=$2} }
+  | const { Pattern.Const $1 }
+  | LOWER_NAME { Pattern.Name $1 }
+  | LPAREN pattern COLON type_exp RPAREN { Pattern.Typed {pattern=$2; typ=$4} }
+  | LPAREN pattern RPAREN { $2 }
+
 
 type_exp:
   | type_exp_fun { Type_exp.Fun (List.rev $1) }
@@ -110,11 +112,11 @@ type_exps:
   | type_exps COMMA type_exp { $3 :: $1 }
   | type_exp COMMA type_exp { [$3; $1] }
 
-parameters: rparameters { List.rev $1 }
+parameters: parameters1 { List.rev $1 }
 
-rparameters:
+parameters1:
   | parameter { [$1] }
-  | rparameters parameter { $2 :: $1 }
+  | parameters1 parameter { $2 :: $1 }
 
 parameter:
   | LOWER_NAME { Parameter.Untyped $1 }
@@ -140,14 +142,14 @@ exp_sequence:
   | exp_sequence SEMICOLON exp1 { $3 :: $1 }
 
 pattern_matching:
-  | ALT pattern_matchings { List.rev $2 }
-  | pattern_matchings %prec below_ALT { List.rev $1 }
+  | ALT pattern_matching1 { List.rev $2 }
+  | pattern_matching1 { List.rev $1 }
 
-pattern_matchings:
+pattern_matching1:
   | pattern_match { [$1] }
-  | pattern_matchings ALT pattern_match { $3 :: $1 }
+  | pattern_matching1 ALT pattern_match { $3 :: $1 }
 
-pattern_match: pattern ARROW exp { Exp.{pattern=$1; body=$3} }
+pattern_match: pattern ARROW exp1 { Exp.{pattern=$1; body=$3} }
 
 exp1:
   | IF exp1 THEN exp1 ELSE exp1 { Exp.If {ante=$2; cons=$4; alt=$6} }
@@ -201,14 +203,14 @@ exp3:
   | BEGIN exp END { $2 }
   | const { Exp.Const $1 }
   | LOWER_NAME { Exp.Var $1 }
-  | LBRACE records RBRACE { Exp.Record $2 }
+  | LBRACE fields RBRACE { Exp.Record $2 }
 
-records:
-  | record { [$1] }
-  | records SEMICOLON { $1 }
-  | records SEMICOLON records { $3 @ $1 }
+fields:
+  | field { [$1] }
+  | fields SEMICOLON { $1 }
+  | fields SEMICOLON fields { $3 @ $1 }
 
-record:
+field:
   | LOWER_NAME field_type { Exp.{field=$1; typ=$2; exp=Exp.Var $1} }
   | LOWER_NAME field_type EQ exp1 { Exp.{field=$1; typ=$2; exp=$4} }
 
@@ -226,7 +228,32 @@ const:
   | ERROR { Const.Error $1 }
 
 type_binding:
-  | TYPE { () }
+  | TYPE type_param LOWER_NAME EQ type_exp { () }
+  | TYPE type_param LOWER_NAME EQ LBRACE type_fields RBRACE { () }
+  | TYPE type_param LOWER_NAME EQ type_variants { () }
+
+type_param:
+  | { () }
+  | SINGLEQ LOWER_NAME { () }
+  | LPAREN type_params RPAREN { () }
+
+type_params:
+  | SINGLEQ LOWER_NAME { () }
+  | type_params COMMA SINGLEQ LOWER_NAME { () }
+
+type_fields:
+  | LOWER_NAME COLON type_exp { () }
+  | type_fields SEMICOLON { () }
+  | type_fields SEMICOLON type_fields { () }
+
+type_variants:
+  | type_variant { () }
+  | ALT type_variant { () }
+  | type_variants ALT type_variants { () }
+
+type_variant:
+  | UPPER_NAME { () }
+  | UPPER_NAME OF type_exp { () }
 
 name:
   | LOWER_NAME { $1 }

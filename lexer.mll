@@ -25,6 +25,7 @@ let keywords =
     "true", P.TRUE;
     "type", P.TYPE;
     "with", P.WITH;
+    "of", P.OF;
   ]
 
 let string_buf = Buffer.create 200

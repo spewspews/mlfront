@@ -7,6 +7,12 @@ module Type_exp = struct
     | Var of sym
     | Fun of t list
     | Tuple of t list
+    | Record of (sym * t) list
+    | Variant of name list
+  and binding = {sym:sym; params:sym list; body:t}
+  and name =
+    | Untyped of sym
+    | Typed of sym * t
 end
 
 module Const = struct
@@ -32,12 +38,6 @@ module Pattern = struct
     | Typed of {pattern:t; typ:Type_exp.t}
 end
 
-module Parameter = struct
-  type t =
-    | Untyped of sym
-    | Typed of {parameter:sym; typ:Type_exp.t}
-end
-
 module Exp = struct
   type t =
     | App of app
@@ -48,21 +48,21 @@ module Exp = struct
     | Const of Const.t
     | Divide of binary_op
     | Equals of binary_op
-    | Fun of {parameters:Parameter.t list; body:t}
+    | Fun of Type_exp.name list binding
     | Greater of binary_op
     | Greater_eq of binary_op
     | If of {ante:t; cons:t; alt:t}
     | Land of binary_op
     | Less of binary_op
     | Less_eq of binary_op
-    | Let of {binding:bindings; body:t}
+    | Let of definitions binding
     | List of t list
     | Lnot of t
     | Lor of binary_op
     | Lsl of binary_op
     | Lsr of binary_op
     | Lxor of binary_op
-    | Match of {exp:t; pattern_matches:pattern_match list}
+    | Match of {exp:t; pattern_matches:Pattern.t binding list}
     | Minus of binary_op
     | Mod of binary_op
     | Multiply of binary_op
@@ -70,7 +70,7 @@ module Exp = struct
     | Not of t
     | Not_eq of binary_op
     | Or of binary_op
-    | Pattern_fun of pattern_match list
+    | Pattern_fun of Pattern.t binding list
     | Plus of binary_op
     | Record of field list
     | Sequence of t list
@@ -79,20 +79,20 @@ module Exp = struct
     | Typed of t * Type_exp.t
     | Unit
     | Var of sym
-  and binding =
-    | Function of {sym:sym; parameters:Parameter.t list; body:t}
-    | Value of {bound:Pattern.t; exp:t}
-  and bindings =
-    | Let_binding of binding list
-    | Rec_binding of binding list
-  and pattern_match = {pattern:Pattern.t; body:t}
+  and definition =
+    | Function_def of sym * Type_exp.name list binding
+    | Value_def of Pattern.t binding
+  and definitions =
+    | Let_binding of definition list
+    | Rec_binding of definition list
   and binary_op = {lhs:t; rhs:t}
   and app = {fn:t; args:t list}
   and field = {field:sym; typ:Type_exp.t option; exp:t}
+  and 'a binding = {binds:'a; body:t}
 end
 
 type top =
-  | Exp of Exp.bindings
-  | Type of unit
+  | Exp of Exp.definitions
+  | Type of Type_exp.binding list
 
 type prog = top list

@@ -59,8 +59,8 @@ binding_tail:
   | binding_tail AND binding { $3 :: $1 }
 
 binding:
-  | pattern EQ exp { Exp.Value {bound = $1; exp = $3} }
-  | LOWER_NAME parameters EQ exp { Exp.Function {sym = $1; parameters = $2; body = $4} }
+  | pattern EQ exp { Exp.(Value_def {binds = $1; body = $3}) }
+  | LOWER_NAME parameters EQ exp { Exp.(Function_def ($1, {binds = $2; body = $4})) }
 
 pattern:
   | pattern AS LOWER_NAME { Pattern.As {pattern=$1; bound_var=$3} }
@@ -84,29 +84,32 @@ pattern1:
   | LPAREN pattern COLON type_exp RPAREN { Pattern.Typed {pattern=$2; typ=$4} }
   | LPAREN pattern RPAREN { $2 }
 
-
 type_exp:
   | type_exp_fun { Type_exp.Fun (List.rev $1) }
-  | type_exp_tuple { Type_exp.Tuple (List.rev $1) }
   | type_exp1 { $1 }
-
-type_exp1:
-  | SINGLEQ name { Type_exp.Var $2 }
-  | UNDERSCORE { Type_exp.Anon }
-  | LPAREN type_exp RPAREN { $2 }
-  | type_constr { $1 }
 
 type_exp_fun:
   | type_exp_fun ARROW type_exp1 { $3 :: $1 }
   | type_exp1 ARROW type_exp1 { [$3; $1] }
 
+type_exp1:
+  | type_exp_tuple { Type_exp.Tuple (List.rev $1) }
+  | type_exp2 { $1 }
+
 type_exp_tuple:
-  | type_exp_tuple MUL type_exp1 { $3 :: $1 }
-  | type_exp1 MUL type_exp1 { [$3; $1] }
+  | type_exp_tuple MUL type_exp2 { $3 :: $1 }
+  | type_exp2 MUL type_exp2 { [$3; $1] }
+
+type_exp2:
+  | SINGLEQ name { Type_exp.Var $2 }
+  | UNDERSCORE { Type_exp.Anon }
+  | LPAREN type_exp RPAREN { $2 }
+  | type_constr { $1 }
 
 type_constr:
-  | type_exp1 LOWER_NAME { Type_exp.Constr {exps=[$1]; constr=$2} }
-  | LPAREN type_exps RPAREN LOWER_NAME { Type_exp.Constr {exps=(List.rev $2); constr=$4} }
+  | LOWER_NAME { Type_exp.Constr {constr=$1; exps=[]} }
+  | type_exp2 LOWER_NAME { Type_exp.Constr {constr=$2; exps=[$1]} }
+  | LPAREN type_exps RPAREN LOWER_NAME { Type_exp.Constr {constr=$4; exps=(List.rev $2)} }
 
 type_exps:
   | type_exps COMMA type_exp { $3 :: $1 }
@@ -119,19 +122,19 @@ parameters1:
   | parameters1 parameter { $2 :: $1 }
 
 parameter:
-  | LOWER_NAME { Parameter.Untyped $1 }
-  | LPAREN LOWER_NAME COLON type_exp RPAREN { Parameter.Typed {parameter=$2; typ=$4} }
+  | LOWER_NAME { Type_exp.Untyped $1 }
+  | LPAREN LOWER_NAME COLON type_exp RPAREN { Type_exp.Typed ($2, $4) }
 
 exp:
   | binding_head binding_tail IN exp
     {
       let (b, recur) = $1 in
       let binds = b::$2 in
-      let binding = if recur then Exp.Rec_binding binds else Exp.Let_binding binds in
-      Exp.Let {binding; body=$4}
+      let binds = if recur then Exp.Rec_binding binds else Exp.Let_binding binds in
+      Exp.(Let {binds; body=$4})
     }
   | MATCH exp WITH pattern_matching { Exp.Match {exp=$2; pattern_matches=$4} }
-  | FUN parameters ARROW exp { Exp.Fun {parameters=$2; body=$4} }
+  | FUN parameters ARROW exp { Exp.(Fun {binds=$2; body=$4}) }
   | FUNCTION pattern_matching { Exp.Pattern_fun $2 }
   | exp_sequence { Exp.Sequence (List.rev $1) }
   | exp1 { $1 }
@@ -149,7 +152,7 @@ pattern_matching1:
   | pattern_match { [$1] }
   | pattern_matching1 ALT pattern_match { $3 :: $1 }
 
-pattern_match: pattern ARROW exp1 { Exp.{pattern=$1; body=$3} }
+pattern_match: pattern ARROW exp1 { Exp.{binds=$1; body=$3} }
 
 exp1:
   | IF exp1 THEN exp1 ELSE exp1 { Exp.If {ante=$2; cons=$4; alt=$6} }
@@ -231,39 +234,44 @@ const:
   | ERROR { Const.Error $1 }
 
 top_type_binding:
-  | TYPE type_bindings { () }
+  | TYPE type_bindings { List.rev $2 }
 
 type_bindings:
-  | type_binding { () }
-  | type_bindings AND type_binding { () }
+  | type_binding { [$1] }
+  | type_bindings AND type_binding { $3 :: $1 }
 
 type_binding:
-  | type_param LOWER_NAME EQ type_exp { () }
-  | type_param LOWER_NAME EQ LBRACE type_fields RBRACE { () }
-  | type_param LOWER_NAME EQ type_variants { () }
+  | type_param LOWER_NAME EQ type_exp { Type_exp.{sym=$2; params=$1; body=$4} }
+  | type_param LOWER_NAME EQ LBRACE type_fields RBRACE { Type_exp.{sym=$2; params=$1; body=Record $5} }
+  | type_param LOWER_NAME EQ type_variants { Type_exp.{sym=$2; params=$1; body=Variant $4} }
 
 type_param:
-  | { () }
-  | SINGLEQ LOWER_NAME { () }
-  | LPAREN type_params RPAREN { () }
+  | { [] }
+  | SINGLEQ LOWER_NAME { [$2] }
+  | LPAREN type_params RPAREN { $2 }
 
 type_params:
-  | SINGLEQ LOWER_NAME { () }
-  | type_params COMMA SINGLEQ LOWER_NAME { () }
+  | SINGLEQ LOWER_NAME { [$2] }
+  | type_params COMMA SINGLEQ LOWER_NAME { $4 :: $1 }
 
 type_fields:
-  | LOWER_NAME COLON type_exp { () }
-  | type_fields SEMICOLON { () }
-  | type_fields SEMICOLON type_fields { () }
+  | type_fields1 { $1 }
+  | type_fields1 SEMICOLON { $1 }
+
+type_fields1:
+  | type_field { [$1] }
+  | type_fields1 SEMICOLON type_field { $3 :: $1 }
+
+type_field: LOWER_NAME COLON type_exp { $1, $3 }
 
 type_variants:
-  | type_variant { () }
-  | ALT type_variant { () }
-  | type_variants ALT type_variants { () }
+  | type_variant { [$1] }
+  | ALT type_variant { [$2] }
+  | type_variants ALT type_variant { $3 :: $1 }
 
 type_variant:
-  | UPPER_NAME { () }
-  | UPPER_NAME OF type_exp { () }
+  | UPPER_NAME { Type_exp.Untyped $1 }
+  | UPPER_NAME OF type_exp { Type_exp.Typed ($1, $3) }
 
 name:
   | LOWER_NAME { $1 }

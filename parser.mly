@@ -38,7 +38,7 @@ prog:
   | prog1 { List.rev $1 }
 
 prog1:
-  | { [] }
+  | EOF { [] }
   | top_binding prog1 { Exp $1 :: $2 }
   | top_type_binding prog1 { Type $1 :: $2 }
 

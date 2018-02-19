@@ -1,9 +1,7 @@
 open Util
 
 let opts = []
-let argv0 = Sys.argv.(0)
 let usage = Printf.sprintf "Usage: %s [ files... ]" argv0
-
 let add_input file = in_files := file :: !in_files
 
 let compile file in_chan = begin

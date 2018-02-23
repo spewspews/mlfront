@@ -96,3 +96,9 @@ type top =
   | Type of Type_exp.binding list
 
 type prog = top list
+
+let dump_e e = ()
+let dump_t t = ()
+
+let dump prog =
+  List.iter (function Exp e -> dump_e e | Type t -> dump_t t) prog

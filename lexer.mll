@@ -71,6 +71,7 @@ rule token = parse
   | ']' { P.RBRACK }
   | '{' { P.LBRACE }
   | '}' { P.RBRACE }
+  | '|' { P.ALT }
   | eof { P.EOF }
   | ws+ { token lexbuf }
   | "[|" { P.LBRACKARR }
@@ -96,11 +97,13 @@ rule token = parse
       | Ok s -> P.STRING s
       | Error s -> P.ERROR s
     }
-  | lower alnum* {
+  | lower alnum*
+    {
       let Lexing.{pos_lnum=lnum} = Lexing.lexeme_start_p lexbuf in
       let n = Lexing.lexeme lexbuf in
       let s = A.{n; lnum} in
       U.last_sym := s;
+      Printf.printf "read sym %s\n" n;
       match Hashtbl.find_opt keywords n with
       | Some kw -> kw
       | None -> P.LOWER_NAME s

@@ -6,10 +6,9 @@ let in_files : string list ref = ref []
 
 let last_sym = ref A.{n="No Sym"; lnum=0}
 
-(* TODO: finish this.
-let error sym fmt =
-  let f msg = Printf.printf
-*)
+let error A.{n; lnum} fmt =
+  let f msg = Printf.eprintf "%s:%d: %s: near symbol %s" argv0 lnum msg n in
+  Printf.ksprintf f fmt
 
 let hashtbl_create size init =
   let tbl = Hashtbl.create size in

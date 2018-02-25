@@ -6,8 +6,8 @@ let add_input file = in_files := file :: !in_files
 
 let compile file in_chan = begin
   let lexbuf = Lexing.from_channel in_chan in
-  let _ = Parser.prog Lexer.token  lexbuf in
-  ()
+  let ast = Parser.prog Lexer.token  lexbuf in
+  Ast.dump ast;
 end
 
 let () = begin

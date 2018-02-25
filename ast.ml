@@ -1,18 +1,28 @@
-type sym = {n : string; lnum : int}
+module U = Util
 
 module Type_exp = struct
   type t =
     | Anon
-    | Constr of {exps:t list; constr:sym}
-    | Var of sym
+    | Constr of {exps:t list; constr:U.sym}
+    | Var of U.sym
     | Fun of t list
     | Tuple of t list
-    | Record of (sym * t) list
+    | Record of (U.sym * t) list
     | Variant of name list
-  and binding = {sym:sym; params:sym list; body:t}
+  and binding = {sym:U.sym; params:U.sym list; body:t}
   and name =
-    | Untyped of sym
-    | Typed of sym * t
+    | Untyped of U.sym
+    | Typed of U.sym * t
+
+  let rec dump = function
+    | Anon -> Printf.printf "(\"Anon type\")"
+    | Constr {exps; constr} -> Printf.printf "(\"Type constructor\" %s)" (U.quote constr)
+    | Var s -> Printf.printf "(\"Type variable\" %s)" (U.quote s)
+    | Fun l ->
+      Printf.printf "(\"Function type\" ";
+      List.iter (fun t -> dump t; print_char ' ') l;
+      Printf.printf ")"
+    | _ -> Printf.printf "(\"Unknown type expression\")"
 end
 
 module Const = struct
@@ -29,12 +39,12 @@ end
 module Pattern = struct
   type t =
     | Alt of t list
-    | As of {pattern:t; bound_var:sym}
+    | As of {pattern:t; bound_var:U.sym}
     | Cons of t * t
     | Const of Const.t
-    | Name of sym
+    | Name of U.sym
     | Tuple of t list
-    | Type_constr of {constr:sym; body:t}
+    | Type_constr of {constr:U.sym; body:t}
     | Typed of {pattern:t; typ:Type_exp.t}
 end
 
@@ -75,19 +85,19 @@ module Exp = struct
     | Record of field list
     | Sequence of t list
     | Tuple of t list
-    | Type_constr of {constr:sym; exp:t}
+    | Type_constr of {constr:U.sym; exp:t}
     | Typed of t * Type_exp.t
     | Unit
-    | Var of sym
+    | Var of U.sym
   and definition =
-    | Function_def of sym * Type_exp.name list binding
+    | Function_def of U.sym * Type_exp.name list binding
     | Value_def of Pattern.t binding
   and definitions =
     | Let_binding of definition list
     | Rec_binding of definition list
   and binary_op = {lhs:t; rhs:t}
   and app = {fn:t; args:t list}
-  and field = {field:sym; typ:Type_exp.t option; exp:t}
+  and field = {field:U.sym; typ:Type_exp.t option; exp:t}
   and 'a binding = {binds:'a; body:t}
 end
 
@@ -98,7 +108,15 @@ type top =
 type prog = top list
 
 let dump_e e = ()
-let dump_t t = ()
+let dump_t t =
+  let f Type_exp.{sym=U.{n}; params; body} =
+    Printf.printf "(\"Type binding\" \"%s\" (" n;
+    List.iter (fun U.{n} -> Printf.printf "\"%s\" " n) params;
+    Printf.printf ")";
+    Type_exp.dump body;
+    Printf.printf ")\n";
+  in
+  List.iter f t
 
 let dump prog =
   List.iter (function Exp e -> dump_e e | Type t -> dump_t t) prog

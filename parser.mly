@@ -2,7 +2,7 @@
 open Ast
 %}
 
-%token <Ast.sym> LOWER_NAME UPPER_NAME
+%token <Util.sym> LOWER_NAME UPPER_NAME
 %token <int> INT
 %token <float> FLOAT
 %token <string> STRING ERROR

@@ -1,6 +1,5 @@
 {
 module P = Parser
-module A = Ast
 module U = Util
 
 let keywords =
@@ -101,9 +100,9 @@ rule token = parse
     {
       let Lexing.{pos_lnum=lnum} = Lexing.lexeme_start_p lexbuf in
       let n = Lexing.lexeme lexbuf in
-      let s = A.{n; lnum} in
+      let s = U.{n; lnum} in
       U.last_sym := s;
-      Printf.printf "read sym %s\n" n;
+      (*Printf.printf "read sym %s\n" n;*)
       match Hashtbl.find_opt keywords n with
       | Some kw -> kw
       | None -> P.LOWER_NAME s
@@ -111,7 +110,7 @@ rule token = parse
   | upper alnum*
     {
       let Lexing.{pos_lnum=lnum} = Lexing.lexeme_start_p lexbuf in
-      let s = A.{n = (Lexing.lexeme lexbuf); lnum} in
+      let s = U.{n = (Lexing.lexeme lexbuf); lnum} in
       U.last_sym := s;
       P.UPPER_NAME s
     }

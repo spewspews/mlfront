@@ -6,7 +6,7 @@ OCAMLLEX = ocamllex
 INCLUDES =
 OCAMLFLAGS = $(INCLUDES)
 OCAMLOPTFLAGS = $(INCLUDES)
-OBJ = ast.cmx util.cmx parser.cmx lexer.cmx mc.cmx
+OBJ = util.cmx ast.cmx parser.cmx lexer.cmx mc.cmx
 TARG = mc
 
 $(TARG): $(OBJ) depend

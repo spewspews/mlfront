@@ -7,22 +7,52 @@ module Type_exp = struct
     | Var of U.sym
     | Fun of t list
     | Tuple of t list
-    | Record of (U.sym * t) list
+    | Record of typed_sym list
     | Variant of name list
-  and binding = {sym:U.sym; params:U.sym list; body:t}
+  and binding = {ctor:U.sym; params:U.sym list; body:t}
   and name =
     | Untyped of U.sym
-    | Typed of U.sym * t
+    | Typed of typed_sym
+  and typed_sym = {sym:U.sym; typ:t}
 
-  let rec dump = function
-    | Anon -> Printf.printf "(\"Anon type\")"
-    | Constr {exps; constr} -> Printf.printf "(\"Type constructor\" %s)" (U.quote constr)
-    | Var s -> Printf.printf "(\"Type variable\" %s)" (U.quote s)
+  let rec dump =
+    let module P = Printf in
+    function
+    | Anon -> P.printf "(\"Anon type\")"
+    | Constr {exps; constr} ->
+      P.printf "(\"Type constructor\" (%s " (U.quote constr);
+      List.iter (fun t -> dump t; print_char ' ') exps;
+      print_string ")";
+      print_string ")";
+    | Var s -> P.printf "(\"Type variable\" %s)" (U.quote s)
     | Fun l ->
-      Printf.printf "(\"Function type\" ";
+      print_string "(\"Function type\" ";
       List.iter (fun t -> dump t; print_char ' ') l;
-      Printf.printf ")"
-    | _ -> Printf.printf "(\"Unknown type expression\")"
+      print_char ')'
+    | Tuple l ->
+      print_string "(\"Tuple type\" ";
+      List.iter (fun t -> dump t; print_char ' ') l;
+      print_char ')'
+    | Record l ->
+      let f {sym; typ} =
+        P.printf "((Field %s) (Type " (U.quote sym);
+        dump typ;
+        print_string ")) ";
+      in
+      print_string "(\"Record type\" ";
+      List.iter f l;
+      print_string ") ";
+    | Variant l ->
+      let f = function
+        | Untyped sym -> P.printf "(Ctor %s)" (U.quote sym)
+        | Typed {sym; typ} ->
+          P.printf "((Ctor %s) (Typ " (U.quote sym);
+          dump typ;
+          print_string "))";
+      in
+      print_string "(\"Variant Type\" ";
+      List.iter f l;
+      print_string ")\n";
 end
 
 module Const = struct
@@ -109,14 +139,16 @@ type prog = top list
 
 let dump_e e = ()
 let dump_t t =
-  let f Type_exp.{sym=U.{n}; params; body} =
-    Printf.printf "(\"Type binding\" \"%s\" (" n;
+  let f Type_exp.{ctor=U.{n}; params; body} =
+    Printf.printf "(\"Type binding\" (\"%s\" " n;
     List.iter (fun U.{n} -> Printf.printf "\"%s\" " n) params;
-    Printf.printf ")";
+    print_string ")";
     Type_exp.dump body;
-    Printf.printf ")\n";
+    print_string ")\n";
   in
   List.iter f t
 
 let dump prog =
-  List.iter (function Exp e -> dump_e e | Type t -> dump_t t) prog
+  print_endline "(";
+  List.iter (function Exp e -> dump_e e | Type t -> dump_t t) prog;
+  print_endline ")";

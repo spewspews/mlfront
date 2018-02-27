@@ -36,12 +36,12 @@ open Ast
 %%
 
 prog:
-  | prog1 { List.rev $1 }
+  | prog1 EOF { List.rev $1 }
 
 prog1:
-  | EOF { [] }
-  | top_binding prog1 { Exp $1 :: $2 }
-  | top_type_binding prog1 { Type $1 :: $2 }
+  | { [] }
+  | prog1 top_binding { Exp $2 :: $1 }
+  | prog1 top_type_binding { Type $2 :: $1 }
 
 top_binding:
   | binding_head binding_tail
@@ -124,7 +124,7 @@ parameters1:
 
 parameter:
   | LOWER_NAME { Type_exp.Untyped $1 }
-  | LPAREN LOWER_NAME COLON type_exp RPAREN { Type_exp.Typed ($2, $4) }
+  | LPAREN LOWER_NAME COLON type_exp RPAREN { Type_exp.(Typed {sym=$2; typ=$4}) }
 
 exp:
   | binding_head binding_tail IN exp
@@ -242,37 +242,40 @@ type_bindings:
   | type_bindings AND type_binding { $3 :: $1 }
 
 type_binding:
-  | type_param LOWER_NAME EQ type_exp { Type_exp.{sym=$2; params=$1; body=$4} }
-  | type_param LOWER_NAME EQ LBRACE type_fields RBRACE { Type_exp.{sym=$2; params=$1; body=Record $5} }
-  | type_param LOWER_NAME EQ type_variants { Type_exp.{sym=$2; params=$1; body=Variant $4} }
+  | type_param LOWER_NAME EQ type_exp { Type_exp.{ctor=$2; params=$1; body=$4} }
+  | type_param LOWER_NAME EQ LBRACE type_fields RBRACE { Type_exp.{ctor=$2; params=$1; body=Record $5} }
+  | type_param LOWER_NAME EQ type_variants { Type_exp.{ctor=$2; params=$1; body=Variant $4} }
 
 type_param:
   | { [] }
   | SINGLEQ LOWER_NAME { [$2] }
-  | LPAREN type_params RPAREN { $2 }
+  | LPAREN type_params RPAREN { List.rev $2 }
 
 type_params:
   | SINGLEQ LOWER_NAME { [$2] }
   | type_params COMMA SINGLEQ LOWER_NAME { $4 :: $1 }
 
 type_fields:
-  | type_fields1 { $1 }
-  | type_fields1 SEMICOLON { $1 }
+  | type_fields1 { List.rev $1 }
+  | type_fields1 SEMICOLON { List.rev $1 }
 
 type_fields1:
   | type_field { [$1] }
   | type_fields1 SEMICOLON type_field { $3 :: $1 }
 
-type_field: LOWER_NAME COLON type_exp { $1, $3 }
+type_field: LOWER_NAME COLON type_exp { Type_exp.{sym=$1; typ=$3} }
 
 type_variants:
+  | type_variants1 { List.rev $1 }
+
+type_variants1:
   | type_variant { [$1] }
   | ALT type_variant { [$2] }
-  | type_variants ALT type_variant { $3 :: $1 }
+  | type_variants1 ALT type_variant { $3 :: $1 }
 
 type_variant:
   | UPPER_NAME { Type_exp.Untyped $1 }
-  | UPPER_NAME OF type_exp { Type_exp.Typed ($1, $3) }
+  | UPPER_NAME OF type_exp { Type_exp.(Typed {sym=$1; typ=$3}) }
 
 name:
   | LOWER_NAME { $1 }

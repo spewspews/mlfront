@@ -54,10 +54,13 @@ rule token = parse
   | "<>" { P.NOTEQ }
   | ">=" { P.GREATEREQ }
   | "[]" { P.EMPTY }
+  | "[|" { P.LBRACKARR }
+  | "|]" { P.RBRACKARR }
   | '(' { P.LPAREN }
   | ')' { P.RPAREN }
   | '*' { P.MUL }
   | '+' { P.PLUS }
+  | ',' { P.COMMA }
   | '-' { P.MINUS }
   | '/' { P.DIV }
   | ':' { P.COLON }
@@ -69,12 +72,10 @@ rule token = parse
   | '\n' { Lexing.new_line lexbuf; token lexbuf }
   | ']' { P.RBRACK }
   | '{' { P.LBRACE }
-  | '}' { P.RBRACE }
   | '|' { P.ALT }
+  | '}' { P.RBRACE }
   | eof { P.EOF }
   | ws+ { token lexbuf }
-  | "[|" { P.LBRACKARR }
-  | "|]" { P.RBRACKARR }
   | integer
     {
       let s = Lexing.lexeme lexbuf in
@@ -102,7 +103,7 @@ rule token = parse
       let n = Lexing.lexeme lexbuf in
       let s = U.{n; lnum} in
       U.last_sym := s;
-      (*Printf.printf "read sym %s\n" n;*)
+      (*Printf.eprintf "read sym %s\n" n;*)
       match Hashtbl.find_opt keywords n with
       | Some kw -> kw
       | None -> P.LOWER_NAME s

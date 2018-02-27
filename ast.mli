@@ -1,16 +1,18 @@
-module Type_exp :
-  sig
-    type t =
-        Anon
-      | Constr of { exps : t list; constr : Util.sym; }
-      | Var of Util.sym
-      | Fun of t list
-      | Tuple of t list
-      | Record of (Util.sym * t) list
-      | Variant of name list
-    and binding = { sym : Util.sym; params : Util.sym list; body : t; }
-    and name = Untyped of Util.sym | Typed of Util.sym * t
-  end
+module Type_exp : sig
+  type t =
+    | Anon
+    | Constr of {exps:t list; constr:Util.sym}
+    | Var of Util.sym
+    | Fun of t list
+    | Tuple of t list
+    | Record of typed_sym list
+    | Variant of name list
+  and binding = {ctor:Util.sym; params:Util.sym list; body:t}
+  and name =
+    | Untyped of Util.sym
+    | Typed of typed_sym
+  and typed_sym = {sym:Util.sym; typ:t}
+end
 module Const :
   sig
     type t =

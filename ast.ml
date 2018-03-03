@@ -44,11 +44,11 @@ module Type_exp = struct
       print_string ") ";
     | Variant l ->
       let f = function
-        | Untyped sym -> P.printf "(Ctor %s)" (U.quote sym)
+        | Untyped sym -> P.printf "((Ctor %s) ())" (U.quote sym)
         | Typed {sym; typ} ->
-          P.printf "((Ctor %s) (Typ " (U.quote sym);
+          P.printf "((Ctor %s) " (U.quote sym);
           dump typ;
-          print_string "))";
+          print_string ")";
       in
       print_string "(\"Variant Type\" ";
       List.iter f l;
@@ -137,16 +137,29 @@ type top =
 
 type prog = top list
 
-let dump_e e = ()
+let dump_e e =
+  let f = function
+    | Exp.Function_def (sym, _) -> Printf.printf "(Fun %s)\n" (U.quote sym)
+    | Exp.Value_def _ -> print_string "(Value)\n"
+  in
+  let l = match e with
+    | Exp.Let_binding l -> print_string "(\"Let binding\" "; l
+    | Exp.Rec_binding l -> print_string "(\"Letrec binding\" "; l
+  in
+  List.iter f l;
+  print_string ")\n"
+
 let dump_t t =
   let f Type_exp.{ctor=U.{n}; params; body} =
-    Printf.printf "(\"Type binding\" (\"%s\" " n;
+    Printf.printf "(\"%s\" (" n;
     List.iter (fun U.{n} -> Printf.printf "\"%s\" " n) params;
     print_string ")";
     Type_exp.dump body;
     print_string ")\n";
   in
-  List.iter f t
+  print_string "(\"Type binding\" ";
+  List.iter f t;
+  print_string ")\n"
 
 let dump prog =
   print_endline "(";

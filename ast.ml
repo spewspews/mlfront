@@ -4,19 +4,22 @@ module U = Util
 	TODO: need to break this up into type expressions
 	and type definitions I think.
 *)
-module Type_exp = struct
-	type t =
+module Type = struct
+	type exp =
 		| Anon
-		| Constr of {exps:t list; constr:U.sym}
+		| Ctor of {ctor:U.sym; parameters:exp list}
 		| Var of U.sym
-		| Fun of t list
-		| Tuple of t list
+		| Fun of exp list
+		| Product of exp list
+	type variant = {var_ctor:U.sym; param:exp option}
+	type field = {field_name:U.sym; typ:exp}
+	type body =
+		| Sum of variant list
 		| Record of field list
-		| Variant of variant list
-	and declaration = {ctor:U.sym; params:U.sym list; body:t}
-	and variant = {ctor:U.sym; param:t option}
-	and field = {field_name:U.sym; typ:t}
+		| Exp of exp
+	type decl = {ctor:U.sym; params:U.sym list; body:body}
 
+(*
 	let rec dump =
 		let module P = Printf in
 		function
@@ -59,9 +62,10 @@ module Type_exp = struct
 			print_string "(\"Variant Type\" ";
 			List.iter f l;
 			print_string ")\n";
+*)
 end
 
-module Const = struct
+module Constant = struct
 	type t =
 		| Bool of bool
 		| Char of char
@@ -77,39 +81,39 @@ module Pattern = struct
 		| Alt of t list
 		| As of {pattern:t; bound_var:U.sym}
 		| Cons of t * t
-		| Const of Const.t
+		| Constant of Constant.t
 		| Name of U.sym
 		| Tuple of t list
-		| Type_constr of {constr:U.sym; body:t}
-		| Typed of {pattern:t; typ:Type_exp.t}
+		| Variant of {var_ctor:U.sym; body:t}
+		| Typed of {pattern:t; typ:Type.exp}
 end
 
 module Exp = struct
 	type t =
 		| App of {fun_name:t; parameters:t list}
-		| Arr of t list
+		| Array of t list
 		| Asr of binary_op
 		| Assign of binary_op
 		| Cons of binary_op
-		| Const of Const.t
+		| Constant of Constant.t
 		| Divide of binary_op
 		| Equals of binary_op
-		| Fun of function_def
-		| Function of fun_match list
+		| Fun of fun_def
+		| Function of fun_def list
 		| Greater of binary_op
 		| Greater_eq of binary_op
 		| If of {ante:t; cons:t; alt:t}
 		| Land of binary_op
 		| Less of binary_op
 		| Less_eq of binary_op
-		| Let of {decls:declaration list; scope:t}
+		| Let of {decls:decls; scope:t}
 		| List of t list
 		| Lnot of t
 		| Lor of binary_op
 		| Lsl of binary_op
 		| Lsr of binary_op
 		| Lxor of binary_op
-		| Match of {exp:t; matches:fun_match list}
+		| Match of {exp:t; matches:fun_def list}
 		| Minus of binary_op
 		| Mod of binary_op
 		| Multiply of binary_op
@@ -122,30 +126,28 @@ module Exp = struct
 		| Sequence of t list
 		| Tuple of t list
 		| Type_constr of {constr:U.sym; exp:t}
-		| Typed of t * Type_exp.t
+		| Typed of t * Type.exp
 		| Unit
 		| Var of U.sym
-	and bindings =
-		| Let_binding of binding list
-		| Rec_binding of binding list
+	and decls =
+		| Non_rec of decl list
+		| Rec of decl list
 	and binary_op = {lhs:t; rhs:t}
 	and field =
-		| Typed_field of {field_name:U.sym; typ:Type_exp.t; exp:t}
+		| Typed_field of {field_name:U.sym; typ:Type.exp; exp:t}
 		| Untyped_field of {field_name:U.sym; exp:t}
-	and binding = {pattern:Pattern.t; value:t}
-	and function_def = {parameters:Pattern.t list; body:t}
-	and fun_match = {pattern:Pattern.t; body:t}
-	type declaration =
-		| Value_decl of binding
-		| Function_decl of {name:U.sym; def:function_def}
+	and fun_def = {parameters:Pattern.t list; body:t}
+	and decl =
+		| Value_decl of {pattern:Pattern.t; value:t}
+		| Function_decl of {name:U.sym; def:fun_def}
 end
 
 type top =
-	| Exp of Exp.declaration list
-	| Type of Type_exp.binding list
+	| Exp of Exp.decl list
+	| Type of Type.decl list
 
 type prog = top list
-
+(*
 let dump_e e =
 	let f = function
 		| Exp.Function_def (sym, _) -> Printf.printf "(Fun %s)\n" (U.quote sym)
@@ -174,3 +176,4 @@ let dump prog =
 	print_endline "(";
 	List.iter (function Exp e -> dump_e e | Type t -> dump_t t) prog;
 	print_endline ")";
+*)

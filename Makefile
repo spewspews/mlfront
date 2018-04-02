@@ -9,28 +9,32 @@ OCAMLOPTFLAGS = $(INCLUDES)
 OBJ = util.cmx ast.cmx parser.cmx lexer.cmx mc.cmx
 TARG = mc
 
-$(TARG): $(OBJ) depend
+$(TARG): $(OBJ)
 	$(OCAMLOPT) -o $@ $(OCAMLFLAGS) $(OBJ)
 
-%.ml: %.mly
+parser.mli: parser.mly
 	$(OCAMLYACC) $<
 
-%.ml: %.mll
+parser.ml: parser.mli
+
+lexer.ml: lexer.mll
 	$(OCAMLLEX) $<
 
-%.cmo: %.ml
-	$(OCAMLC) $(OCAMLFLAGS) -c $<
-
 %.cmi: %.mli
-	$(OCAMLC) $(OCAMLFLAGS) -c $<
+	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $<
+
+%.cmo: %.ml
+	$(OCAMLC) $(OCAMLCFLAGS) -c $<
 
 %.cmx: %.ml
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $<
 
 clean:
-	rm -f *.cm[iox] *.o mc parser.ml parser.mli lexer.ml depend
+	rm -f *.cm[iox] *.o mc parser.ml parser.mli lexer.ml
 
 depend: parser.ml lexer.ml
-	$(OCAMLDEP) $(INCLUDES) *.mli *.ml > depend
+	$(OCAMLDEP) $(INCLUDES) *.mli *.ml > .depend
 
-include depend
+.PHONY: clean depend
+
+include .depend

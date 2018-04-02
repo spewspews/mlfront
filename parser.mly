@@ -40,28 +40,27 @@ prog:
 
 prog1:
 	| { [] }
-	| prog1 top_binding { Exp $2 :: $1 }
-	| prog1 top_type_binding { Type $2 :: $1 }
+	| prog1 top_decl { Exp $2 :: $1 }
+	| prog1 top_type_decl { Type $2 :: $1 }
 
-top_binding:
-	| binding_head binding_tail
-		{
-			let (b, recur) = $1 in
-			let binds = b::$2 in
-			if recur then Exp.Rec_binding binds else Exp.Let_binding binds
-		}
+top_decl:
+	| LET decls { Exp.(Non_rec $2) }
+	| LET REC decls { Exp.(Rec $3) }
 
-binding_head:
-	| LET binding { ($2, false) }
-	| LET REC binding { ($3, true) }
+decls:
+	| decl { [$1] }
+	| decls AND decl { $3 :: $1 }
 
-binding_tail:
-	| { [] }
-	| binding_tail AND binding { $3 :: $1 }
+decl:
+	| pattern EQ exp { Exp.(Value_decl {pattern = $1; value = $3}) }
+	| LOWER_NAME parameters EQ exp { Exp.(Function_decl {name=$1; def={params = $2; body = $4}}) }
 
-binding:
-	| pattern EQ exp { Exp.(Value_def {binds = $1; body = $3}) }
-	| LOWER_NAME parameters EQ exp { Exp.(Function_def ($1, {binds = $2; body = $4})) }
+parameters:
+	| parameters1 { List.rev $1 }
+
+parameters1:
+	| pattern1 { [$1] }
+	| parameters1 pattern1 { $2 :: $1 }
 
 pattern:
 	| pattern AS LOWER_NAME { Pattern.As {pattern=$1; bound_var=$3} }
@@ -79,14 +78,14 @@ pattern_tuple:
 	| pattern1 COMMA pattern1 { [$3; $1] }
 
 pattern1:
-	| UPPER_NAME pattern1 { Pattern.Type_constr {constr=$1; body=$2} }
-	| const { Pattern.Const $1 }
+	| UPPER_NAME pattern1 { Pattern.Variant {var_ctor=$1; body=$2} }
+	| constant { Pattern.Constant $1 }
 	| LOWER_NAME { Pattern.Name $1 }
 	| LPAREN pattern COLON type_exp RPAREN { Pattern.Typed {pattern=$2; typ=$4} }
 	| LPAREN pattern RPAREN { $2 }
 
 type_exp:
-	| type_exp_fun { Type_exp.Fun (List.rev $1) }
+	| type_exp_fun { Type.Fun (List.rev $1) }
 	| type_exp1 { $1 }
 
 type_exp_fun:
@@ -94,49 +93,33 @@ type_exp_fun:
 	| type_exp1 ARROW type_exp1 { [$3; $1] }
 
 type_exp1:
-	| type_exp_tuple { Type_exp.Tuple (List.rev $1) }
+	| type_exp_product { Type.Product (List.rev $1) }
 	| type_exp2 { $1 }
 
-type_exp_tuple:
-	| type_exp_tuple MUL type_exp2 { $3 :: $1 }
+type_exp_product:
+	| type_exp_product MUL type_exp2 { $3 :: $1 }
 	| type_exp2 MUL type_exp2 { [$3; $1] }
 
 type_exp2:
-	| SINGLEQ name { Type_exp.Var $2 }
-	| UNDERSCORE { Type_exp.Anon }
+	| SINGLEQ name { Type.Var $2 }
+	| UNDERSCORE { Type.Anon }
 	| LPAREN type_exp RPAREN { $2 }
 	| type_constr { $1 }
 
 type_constr:
-	| LOWER_NAME { Type_exp.Constr {constr=$1; exps=[]} }
-	| type_exp2 LOWER_NAME { Type_exp.Constr {constr=$2; exps=[$1]} }
-	| LPAREN type_exps RPAREN LOWER_NAME { Type_exp.Constr {constr=$4; exps=(List.rev $2)} }
+	| LOWER_NAME { Type.Ctor {ctor=$1; params=[]} }
+	| type_exp2 LOWER_NAME { Type.Ctor {ctor=$2; params=[$1]} }
+	| LPAREN type_exps RPAREN LOWER_NAME { Type.Ctor {ctor=$4; params=(List.rev $2)} }
 
 type_exps:
 	| type_exps COMMA type_exp { $3 :: $1 }
 	| type_exp COMMA type_exp { [$3; $1] }
 
-parameters: parameters1 { List.rev $1 }
-
-parameters1:
-	| parameter { [$1] }
-	| parameters1 parameter { $2 :: $1 }
-
-parameter:
-	| LOWER_NAME { Type_exp.Untyped $1 }
-	| LPAREN LOWER_NAME COLON type_exp RPAREN { Type_exp.(Typed {sym=$2; typ=$4}) }
-
 exp:
-	| binding_head binding_tail IN exp
-		{
-			let (b, recur) = $1 in
-			let binds = b::$2 in
-			let binds = if recur then Exp.Rec_binding binds else Exp.Let_binding binds in
-			Exp.(Let {binds; body=$4})
-		}
-	| MATCH exp WITH pattern_matching { Exp.Match {exp=$2; pattern_matches=$4} }
-	| FUN parameters ARROW exp { Exp.(Fun {binds=$2; body=$4}) }
-	| FUNCTION pattern_matching { Exp.Pattern_fun $2 }
+	| top_decl IN exp { Exp.(Let {decls=$1; scope=$3}) }
+	| MATCH exp WITH pattern_matching { Exp.Match {exp=$2; matches=$4} }
+	| FUN parameters ARROW exp { Exp.(Fun {params=$2; body=$4}) }
+	| FUNCTION pattern_matching { Exp.Function $2 }
 	| exp_sequence { Exp.Sequence (List.rev $1) }
 	| exp1 { $1 }
 
@@ -153,11 +136,11 @@ pattern_matching1:
 	| pattern_match { [$1] }
 	| pattern_matching1 ALT pattern_match { $3 :: $1 }
 
-pattern_match: pattern ARROW exp1 { Exp.{binds=$1; body=$3} }
+pattern_match: pattern ARROW exp1 { Exp.{pattern=$1; result=$3} }
 
 exp1:
 	| IF exp1 THEN exp1 ELSE exp1 { Exp.If {ante=$2; cons=$4; alt=$6} }
-	| IF exp1 THEN exp1 { Exp.If {ante=$2; cons=$4; alt=Exp.Const Const.Unit} }
+	| IF exp1 THEN exp1 { Exp.If {ante=$2; cons=$4; alt=Exp.Constant Constant.Unit} }
 	| exp1 ASSIGN exp1 { Exp.Assign Exp.{lhs=$1; rhs=$3} }
 	| tuple_exp { Exp.Tuple (List.rev $1) }
 	| exp2 { $1 }
@@ -190,22 +173,22 @@ exp2:
 	| exp2 OR exp2 { Exp.(Or {lhs=$1; rhs=$3}) }
 	| exp2 PLUS exp2 { Exp.(Plus {lhs=$1; rhs=$3}) }
 	| exp3 { $1 }
-	| exp_app { Exp.App $1 }
+	| exp_apply { let fun_name, params = $1 in Exp.Apply {fun_name; params} }
 	| LBRACK exp_sequence RBRACK { Exp.List (List.rev $2) }
-	| LBRACKARR exp_sequence RBRACKARR { Exp.Arr (List.rev $2) }
+	| LBRACKARR exp_sequence RBRACKARR { Exp.Array (List.rev $2) }
 
-exp_app: exp_app1 { Exp.(let {fn; args} = $1 in {fn; args=List.rev args}) }
+exp_apply: exp_apply1 { let f, p = $1 in f, List.rev p }
 
-exp_app1:
-	| exp3 exp3 { Exp.{fn=$1; args=[$2]} }
-	| exp_app1 exp3 { Exp.(let {fn; args} = $1 in {fn; args=$2::args}) }
+exp_apply1:
+	| exp3 exp3 { $1, [$2] }
+	| exp_apply1 exp3 { let f, p = $1 in f, $2::p }
 
 exp3:
 	| UPPER_NAME exp3 { Exp.Type_constr {constr=$1; exp=$2} }
 	| LPAREN exp COLON type_exp RPAREN { Exp.Typed ($2, $4) }
 	| LPAREN exp RPAREN { $2 }
 	| BEGIN exp END { $2 }
-	| const { Exp.Const $1 }
+	| constant { Exp.Constant $1 }
 	| LOWER_NAME { Exp.Var $1 }
 	| LBRACE fields RBRACE { Exp.Record $2 }
 
@@ -218,33 +201,29 @@ fields1:
 	| fields1 SEMICOLON field { $3 :: $1 }
 
 field:
-	| LOWER_NAME field_type { Exp.{field=$1; typ=$2; exp=Exp.Var $1} }
-	| LOWER_NAME field_type EQ exp1 { Exp.{field=$1; typ=$2; exp=$4} }
+	| LOWER_NAME { Exp.{field=$1; exp=Exp.Var $1} }
+	| LOWER_NAME EQ exp1 { Exp.{field=$1; exp=$3} }
 
-field_type:
-	| { None }
-	| COLON type_exp { Some $2 }
+constant:
+	| INT { Constant.Int $1 }
+	| FLOAT { Constant.Float $1 }
+	| TRUE { Constant.Bool true }
+	| FALSE { Constant.Bool false }
+	| UNIT_VAL { Constant.Unit }
+	| STRING { Constant.String $1 }
+	| ERROR { Constant.Error $1 }
 
-const:
-	| INT { Const.Int $1 }
-	| FLOAT { Const.Float $1 }
-	| TRUE { Const.Bool true }
-	| FALSE { Const.Bool false }
-	| UNIT_VAL { Const.Unit }
-	| STRING { Const.String $1 }
-	| ERROR { Const.Error $1 }
+top_type_decl:
+	| TYPE type_decls { List.rev $2 }
 
-top_type_binding:
-	| TYPE type_bindings { List.rev $2 }
+type_decls:
+	| type_decl { [$1] }
+	| type_decls AND type_decl { $3 :: $1 }
 
-type_bindings:
-	| type_binding { [$1] }
-	| type_bindings AND type_binding { $3 :: $1 }
-
-type_binding:
-	| type_param LOWER_NAME EQ type_exp { Type_exp.{ctor=$2; params=$1; body=$4} }
-	| type_param LOWER_NAME EQ LBRACE type_fields RBRACE { Type_exp.{ctor=$2; params=$1; body=Record $5} }
-	| type_param LOWER_NAME EQ type_variants { Type_exp.{ctor=$2; params=$1; body=Variant $4} }
+type_decl:
+	| type_param LOWER_NAME EQ type_exp { Type.{ctor=$2; params=$1; body=Exp $4} }
+	| type_param LOWER_NAME EQ LBRACE type_fields RBRACE { Type.{ctor=$2; params=$1; body=Record $5} }
+	| type_param LOWER_NAME EQ type_variants { Type.{ctor=$2; params=$1; body=Sum $4} }
 
 type_param:
 	| { [] }
@@ -263,7 +242,7 @@ type_fields1:
 	| type_field { [$1] }
 	| type_fields1 SEMICOLON type_field { $3 :: $1 }
 
-type_field: LOWER_NAME COLON type_exp { Type_exp.{sym=$1; typ=$3} }
+type_field: LOWER_NAME COLON type_exp { Type.{field=$1; typ=$3} }
 
 type_variants:
 	| type_variants1 { List.rev $1 }
@@ -274,8 +253,8 @@ type_variants1:
 	| type_variants1 ALT type_variant { $3 :: $1 }
 
 type_variant:
-	| UPPER_NAME { Type_exp.Untyped $1 }
-	| UPPER_NAME OF type_exp { Type_exp.(Typed {sym=$1; typ=$3}) }
+	| UPPER_NAME { Type.{variant=$1; typ=None} }
+	| UPPER_NAME OF type_exp { Type.{variant=$1; typ=Some $3} }
 
 name:
 	| LOWER_NAME { $1 }

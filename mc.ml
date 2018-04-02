@@ -8,7 +8,8 @@ let compile file in_chan = begin
 	(*Printf.printf "compiling %s\n" file;*)
 	let lexbuf = Lexing.from_channel in_chan in
 	let ast = Parser.prog Lexer.token  lexbuf in
-	Ast.dump ast;
+(*	Ast.dump ast;*)
+	()
 end
 
 let () = begin

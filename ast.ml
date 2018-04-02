@@ -1,18 +1,14 @@
 module U = Util
 
-(*
-	TODO: need to break this up into type expressions
-	and type definitions I think.
-*)
 module Type = struct
 	type exp =
 		| Anon
-		| Ctor of {ctor:U.sym; parameters:exp list}
+		| Ctor of {ctor:U.sym; params:exp list}
 		| Var of U.sym
 		| Fun of exp list
 		| Product of exp list
-	type variant = {var_ctor:U.sym; param:exp option}
-	type field = {field_name:U.sym; typ:exp}
+	type variant = {variant:U.sym; typ:exp option}
+	type field = {field:U.sym; typ:exp}
 	type body =
 		| Sum of variant list
 		| Record of field list
@@ -90,7 +86,7 @@ end
 
 module Exp = struct
 	type t =
-		| App of {fun_name:t; parameters:t list}
+		| Apply of {fun_name:t; params:t list}
 		| Array of t list
 		| Asr of binary_op
 		| Assign of binary_op
@@ -99,7 +95,7 @@ module Exp = struct
 		| Divide of binary_op
 		| Equals of binary_op
 		| Fun of fun_def
-		| Function of fun_def list
+		| Function of matching list
 		| Greater of binary_op
 		| Greater_eq of binary_op
 		| If of {ante:t; cons:t; alt:t}
@@ -113,7 +109,7 @@ module Exp = struct
 		| Lsl of binary_op
 		| Lsr of binary_op
 		| Lxor of binary_op
-		| Match of {exp:t; matches:fun_def list}
+		| Match of {exp:t; matches:matching list}
 		| Minus of binary_op
 		| Mod of binary_op
 		| Multiply of binary_op
@@ -133,17 +129,16 @@ module Exp = struct
 		| Non_rec of decl list
 		| Rec of decl list
 	and binary_op = {lhs:t; rhs:t}
-	and field =
-		| Typed_field of {field_name:U.sym; typ:Type.exp; exp:t}
-		| Untyped_field of {field_name:U.sym; exp:t}
-	and fun_def = {parameters:Pattern.t list; body:t}
+	and field = {field:U.sym; exp:t}
+	and fun_def = {params:Pattern.t list; body:t}
+	and matching = {pattern:Pattern.t; result:t}
 	and decl =
 		| Value_decl of {pattern:Pattern.t; value:t}
 		| Function_decl of {name:U.sym; def:fun_def}
 end
 
 type top =
-	| Exp of Exp.decl list
+	| Exp of Exp.decls
 	| Type of Type.decl list
 
 type prog = top list

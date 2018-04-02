@@ -80,7 +80,7 @@ module Pattern = struct
 		| Constant of Constant.t
 		| Name of U.sym
 		| Tuple of t list
-		| Variant of {var_ctor:U.sym; body:t}
+		| Variant of {variant:U.sym; body:t}
 		| Typed of {pattern:t; typ:Type.exp}
 end
 

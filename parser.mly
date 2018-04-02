@@ -45,16 +45,17 @@ prog1:
 
 top_decl:
 	| LET decls { Exp.(Non_rec $2) }
-	| LET REC decls { Exp.(Rec $3) }
+	| REC LET decls { Exp.(Rec $3) }
 
 decls:
 	| decl { [$1] }
-	| decls AND decl { $3 :: $1 }
+	| decls AND LET decl { $4 :: $1 }
 
 decl:
 	| pattern EQ exp { Exp.(Value_decl {pattern = $1; value = $3}) }
 	| LOWER_NAME parameters EQ exp { Exp.(Function_decl {name=$1; def={params = $2; body = $4}}) }
 
+// TODO: add type of return value of function
 parameters:
 	| parameters1 { List.rev $1 }
 
@@ -78,7 +79,7 @@ pattern_tuple:
 	| pattern1 COMMA pattern1 { [$3; $1] }
 
 pattern1:
-	| UPPER_NAME pattern1 { Pattern.Variant {var_ctor=$1; body=$2} }
+	| UPPER_NAME pattern1 { Pattern.Variant {variant=$1; body=$2} }
 	| constant { Pattern.Constant $1 }
 	| LOWER_NAME { Pattern.Name $1 }
 	| LPAREN pattern COLON type_exp RPAREN { Pattern.Typed {pattern=$2; typ=$4} }

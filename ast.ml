@@ -2,12 +2,13 @@ module U = Util
 
 module Type = struct
 	type exp =
+		| None
 		| Anon
 		| Ctor of {ctor:U.sym; params:exp list}
 		| Var of U.sym
 		| Fun of exp list
 		| Product of exp list
-	type variant = {variant:U.sym; typ:exp option}
+	type variant = {variant:U.sym; typ:exp}
 	type field = {field:U.sym; typ:exp}
 	type body =
 		| Sum of variant list
@@ -122,7 +123,7 @@ module Exp = struct
 		| Sequence of t list
 		| Tuple of t list
 		| Type_constr of {constr:U.sym; exp:t}
-		| Typed of t * Type.exp
+		| Typed of {exp:t; typ:Type.exp}
 		| Unit
 		| Var of U.sym
 	and decls =
@@ -130,7 +131,7 @@ module Exp = struct
 		| Rec of decl list
 	and binary_op = {lhs:t; rhs:t}
 	and field = {field:U.sym; exp:t}
-	and fun_def = {params:Pattern.t list; body:t}
+	and fun_def = {params:Pattern.t list; body:t; result_type:Type.exp}
 	and matching = {pattern:Pattern.t; result:t}
 	and decl =
 		| Value_decl of {pattern:Pattern.t; value:t}

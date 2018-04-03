@@ -53,7 +53,13 @@ decls:
 
 decl:
 	| pattern EQ exp { Exp.(Value_decl {pattern = $1; value = $3}) }
-	| LOWER_NAME parameters EQ exp { Exp.(Function_decl {name=$1; def={params = $2; body = $4}}) }
+	| LOWER_NAME parameters return_type EQ exp
+		{
+			Exp.
+			( Function_decl
+				{ name=$1
+				; def={params=$2; body=$5; result_type=$3} } )
+		}
 
 // TODO: add type of return value of function
 parameters:
@@ -62,6 +68,10 @@ parameters:
 parameters1:
 	| pattern1 { [$1] }
 	| parameters1 pattern1 { $2 :: $1 }
+
+return_type:
+	| { Type.None }
+	| COLON type_exp1 { $2 }
 
 pattern:
 	| pattern AS LOWER_NAME { Pattern.As {pattern=$1; bound_var=$3} }
@@ -113,13 +123,13 @@ type_constr:
 	| LPAREN type_exps RPAREN LOWER_NAME { Type.Ctor {ctor=$4; params=(List.rev $2)} }
 
 type_exps:
-	| type_exps COMMA type_exp { $3 :: $1 }
 	| type_exp COMMA type_exp { [$3; $1] }
+	| type_exps COMMA type_exp { $3 :: $1 }
 
 exp:
 	| top_decl IN exp { Exp.(Let {decls=$1; scope=$3}) }
 	| MATCH exp WITH pattern_matching { Exp.Match {exp=$2; matches=$4} }
-	| FUN parameters ARROW exp { Exp.(Fun {params=$2; body=$4}) }
+	| FUN parameters return_type ARROW exp { Exp.(Fun {params=$2; body=$5; result_type=$3}) }
 	| FUNCTION pattern_matching { Exp.Function $2 }
 	| exp_sequence { Exp.Sequence (List.rev $1) }
 	| exp1 { $1 }
@@ -186,7 +196,7 @@ exp_apply1:
 
 exp3:
 	| UPPER_NAME exp3 { Exp.Type_constr {constr=$1; exp=$2} }
-	| LPAREN exp COLON type_exp RPAREN { Exp.Typed ($2, $4) }
+	| LPAREN exp COLON type_exp RPAREN { Exp.Typed {exp=$2; typ=$4} }
 	| LPAREN exp RPAREN { $2 }
 	| BEGIN exp END { $2 }
 	| constant { Exp.Constant $1 }
@@ -255,7 +265,7 @@ type_variants1:
 
 type_variant:
 	| UPPER_NAME { Type.{variant=$1; typ=None} }
-	| UPPER_NAME OF type_exp { Type.{variant=$1; typ=Some $3} }
+	| UPPER_NAME OF type_exp { Type.{variant=$1; typ=$3} }
 
 name:
 	| LOWER_NAME { $1 }
